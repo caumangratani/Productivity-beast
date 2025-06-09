@@ -79,6 +79,151 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     company_id: Optional[str] = None
 
+# Auth Models
+class UserAuth(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: str
+    password_hash: str
+    is_active: bool = True
+    is_verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
+
+class Company(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    plan: PlanType
+    subscription_status: str = "trial"  # trial, active, suspended, cancelled
+    trial_ends_at: datetime = Field(default_factory=lambda: datetime.utcnow() + timedelta(days=14))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    settings: dict = {}
+
+class AuthSignup(BaseModel):
+    name: str
+    email: str
+    password: str
+    company: str
+    plan: PlanType = PlanType.PERSONAL
+
+class AuthLogin(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+# Helper Functions
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        
+        user = await db.users.find_one({"id": user_id})
+        if user is None:
+            raise HTTPException(status_code=401, detail="User not found")
+        return User(**user)
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+# Authentication Routes
+@api_router.post("/auth/signup")
+async def signup(signup_data: AuthSignup):
+    # Check if user already exists
+    existing_user = await db.user_auth.find_one({"email": signup_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    # Create company
+    company = Company(
+        name=signup_data.company,
+        plan=signup_data.plan
+    )
+    await db.companies.insert_one(company.dict())
+    
+    # Create auth user
+    password_hash = get_password_hash(signup_data.password)
+    auth_user = UserAuth(
+        email=signup_data.email,
+        password_hash=password_hash
+    )
+    await db.user_auth.insert_one(auth_user.dict())
+    
+    # Create user profile
+    user = User(
+        id=auth_user.id,
+        name=signup_data.name,
+        email=signup_data.email,
+        role=UserRole.ADMIN,  # First user is admin
+        company_id=company.id
+    )
+    await db.users.insert_one(user.dict())
+    
+    return {"success": True, "message": "Account created successfully"}
+
+@api_router.post("/auth/login", response_model=Token)
+async def login(login_data: AuthLogin):
+    # Find user
+    auth_user = await db.user_auth.find_one({"email": login_data.email})
+    if not auth_user or not verify_password(login_data.password, auth_user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not auth_user["is_active"]:
+        raise HTTPException(status_code=401, detail="Account is deactivated")
+    
+    # Update last login
+    await db.user_auth.update_one(
+        {"id": auth_user["id"]},
+        {"$set": {"last_login": datetime.utcnow()}}
+    )
+    
+    # Get user profile
+    user = await db.users.find_one({"id": auth_user["id"]})
+    if not user:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": auth_user["id"]}, expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "name": user["name"],
+            "email": user["email"],
+            "role": user["role"],
+            "company_id": user.get("company_id")
+        }
+    }
+
+@api_router.get("/auth/me")
+async def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
 class UserCreate(BaseModel):
     name: str
     email: str
