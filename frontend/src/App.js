@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import TeamPerformance from "./components/TeamPerformance";
 import AICoach from "./components/AICoach";
 import IntegrationSettings from "./components/IntegrationSettings";
+import UserManual from "./components/UserManual";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -38,7 +39,8 @@ const Navigation = ({ activeSection, setActiveSection, onLogout, user }) => {
                 { key: 'projects', label: 'Team Projects', icon: '📋' },
                 { key: 'performance', label: 'Team Performance', icon: '📈' },
                 { key: 'ai-coach', label: 'AI Coach', icon: '🤖' },
-                { key: 'integrations', label: 'Integrations', icon: '🔗' }
+                { key: 'integrations', label: 'Integrations', icon: '🔗' },
+                { key: 'manual', label: 'User Guide', icon: '📚' }
               ].map((item) => (
                 <button
                   key={item.key}
@@ -144,6 +146,8 @@ function App() {
         return <AICoach currentUser={user} />;
       case 'integrations':
         return <IntegrationSettings currentUser={user} />;
+      case 'manual':
+        return <UserManual />;
       default:
         return <Dashboard />;
     }
