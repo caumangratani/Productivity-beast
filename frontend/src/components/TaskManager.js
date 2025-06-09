@@ -124,7 +124,10 @@ const TaskManager = ({ currentUser, users }) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Personal Task Management</h2>
-          <p className="text-gray-600 mt-1">Manage your individual tasks with AI-powered prioritization</p>
+          <p className="text-gray-600 mt-1">
+            Manage your individual tasks with AI-powered prioritization
+            {showModal && <span className="text-red-500 ml-2">(Modal Open)</span>}
+          </p>
         </div>
         <button
           onClick={() => {
