@@ -347,8 +347,35 @@ async def calculate_performance_score(user_id: str) -> float:
 
 # User Management
 @api_router.post("/users", response_model=User)
-async def create_user(user_data: UserCreate):
-    user = User(**user_data.dict())
+async def create_user(signup_data: AuthSignup):
+    # Check if user already exists
+    existing_user = await db.user_auth.find_one({"email": signup_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    # Create company
+    company = Company(
+        name=signup_data.company,
+        plan=signup_data.plan
+    )
+    await db.companies.insert_one(company.dict())
+    
+    # Create auth user
+    password_hash = get_password_hash(signup_data.password)
+    auth_user = UserAuth(
+        email=signup_data.email,
+        password_hash=password_hash
+    )
+    await db.user_auth.insert_one(auth_user.dict())
+    
+    # Create user profile
+    user = User(
+        id=auth_user.id,
+        name=signup_data.name,
+        email=signup_data.email,
+        role=UserRole.ADMIN,  # First user is admin
+        company_id=company.id
+    )
     await db.users.insert_one(user.dict())
     return user
 
