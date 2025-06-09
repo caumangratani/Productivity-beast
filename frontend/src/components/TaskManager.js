@@ -37,11 +37,14 @@ const TaskManager = ({ currentUser, users }) => {
 
   const createTask = async () => {
     try {
+      console.log('Creating task with data:', newTask);
       const taskData = {
         ...newTask,
         due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : null
       };
-      await axios.post(`${API}/tasks`, taskData);
+      console.log('Sending task data:', taskData);
+      const response = await axios.post(`${API}/tasks`, taskData);
+      console.log('Task created successfully:', response.data);
       setNewTask({
         title: '',
         description: '',
@@ -54,6 +57,7 @@ const TaskManager = ({ currentUser, users }) => {
       fetchTasks();
     } catch (error) {
       console.error('Error creating task:', error);
+      alert('Error creating task: ' + error.message);
     }
   };
 
