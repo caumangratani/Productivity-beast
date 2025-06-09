@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -10,9 +11,20 @@ from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta
 from enum import Enum
+import jwt
+import bcrypt
+from passlib.context import CryptContext
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Security setup
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
