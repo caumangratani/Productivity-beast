@@ -56,6 +56,16 @@ class EisenhowerQuadrant(str, Enum):
     DELEGATE = "delegate"  # Urgent & Not Important
     DELETE = "delete"  # Not Urgent & Not Important
 
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    MANAGER = "manager"
+    TEAM_MEMBER = "team_member"
+
+class PlanType(str, Enum):
+    PERSONAL = "personal"
+    TEAM = "team"
+    ENTERPRISE = "enterprise"
+
 # Models
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
