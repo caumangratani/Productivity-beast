@@ -198,9 +198,23 @@ const Dashboard = () => {
 
       {/* Features Overview */}
       <div className="stats-card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          🎯 Productivity Beast Features
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            🎯 Productivity Beast Features
+          </h3>
+          <button
+            onClick={() => {
+              fetch(`${API}/populate-sample-data`, { method: 'POST' })
+                .then(() => {
+                  window.location.reload();
+                })
+                .catch(console.error);
+            }}
+            className="btn-secondary text-sm"
+          >
+            Load Sample Data
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
