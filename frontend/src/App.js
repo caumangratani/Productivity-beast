@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import LandingPage from "./components/LandingPage";
 import TaskManager from "./components/TaskManager";
 import ProjectManager from "./components/ProjectManager";
 import Dashboard from "./components/Dashboard";
@@ -12,7 +13,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Navigation Component
-const Navigation = ({ activeSection, setActiveSection }) => {
+const Navigation = ({ activeSection, setActiveSection, onLogout, user }) => {
   return (
     <nav className="bg-white shadow-sm border-b border-purple-100">
       <div className="max-w-7xl mx-auto px-6">
@@ -54,14 +55,15 @@ const Navigation = ({ activeSection, setActiveSection }) => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors">
+            <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+            <button 
+              onClick={onLogout}
+              className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors"
+            >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
               </svg>
             </button>
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">U</span>
-            </div>
           </div>
         </div>
       </div>
@@ -71,13 +73,45 @@ const Navigation = ({ activeSection, setActiveSection }) => {
 
 // Main App Component
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUsers();
+    checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUsers();
+    }
+  }, [isAuthenticated]);
+
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
+  };
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsAuthenticated(false);
+    setActiveSection('dashboard');
+  };
 
   const fetchUsers = async () => {
     try {
@@ -85,8 +119,8 @@ function App() {
       const response = await axios.get(`${API}/users`);
       console.log('Users fetched:', response.data);
       setUsers(response.data);
-      if (response.data.length > 0 && !currentUser) {
-        setCurrentUser(response.data[0]);
+      if (response.data.length > 0 && !user) {
+        setUser(response.data[0]);
         console.log('Current user set to:', response.data[0]);
       }
     } catch (error) {
@@ -99,21 +133,38 @@ function App() {
       case 'dashboard':
         return <Dashboard />;
       case 'tasks':
-        return <TaskManager currentUser={currentUser} users={users} />;
+        return <TaskManager currentUser={user} users={users} />;
       case 'projects':
-        return <ProjectManager currentUser={currentUser} users={users} />;
+        return <ProjectManager currentUser={user} users={users} />;
       case 'performance':
         return <TeamPerformance users={users} />;
       case 'ai-coach':
-        return <AICoach currentUser={currentUser} />;
+        return <AICoach currentUser={user} />;
       default:
         return <Dashboard />;
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LandingPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
-      <Navigation activeSection={activeSection} setActiveSection={setActiveSection} />
+      <Navigation 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection}
+        onLogout={handleLogout}
+        user={user}
+      />
       
       <main className="max-w-7xl mx-auto px-6 py-8">
         {renderActiveSection()}
