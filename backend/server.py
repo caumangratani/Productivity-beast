@@ -428,6 +428,188 @@ async def get_ai_insights(user_id: str):
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow()}
 
+# Sample data endpoint for demo
+@api_router.post("/populate-sample-data")
+async def populate_sample_data():
+    """Populate the database with sample data for demonstration"""
+    
+    # Clear existing data
+    await db.tasks.delete_many({})
+    await db.projects.delete_many({})
+    await db.users.delete_many({})
+    
+    # Create sample users
+    sample_users = [
+        {"name": "Sarah Johnson", "email": "sarah@company.com", "role": "manager"},
+        {"name": "Mike Chen", "email": "mike@company.com", "role": "team_member"},
+        {"name": "Emma Rodriguez", "email": "emma@company.com", "role": "team_member"},
+        {"name": "Alex Thompson", "email": "alex@company.com", "role": "team_member"},
+        {"name": "David Kim", "email": "david@company.com", "role": "team_member"}
+    ]
+    
+    created_users = []
+    for user_data in sample_users:
+        user = User(**user_data)
+        await db.users.insert_one(user.dict())
+        created_users.append(user)
+    
+    # Create sample projects
+    sample_projects = [
+        {
+            "name": "Website Redesign",
+            "description": "Complete overhaul of company website with modern design",
+            "owner_id": created_users[0].id,
+            "team_members": [created_users[1].id, created_users[2].id],
+            "due_date": datetime.utcnow() + timedelta(days=45)
+        },
+        {
+            "name": "Mobile App Development",
+            "description": "Build native mobile app for iOS and Android",
+            "owner_id": created_users[0].id,
+            "team_members": [created_users[3].id, created_users[4].id],
+            "due_date": datetime.utcnow() + timedelta(days=90)
+        }
+    ]
+    
+    created_projects = []
+    for project_data in sample_projects:
+        project = Project(**project_data)
+        await db.projects.insert_one(project.dict())
+        created_projects.append(project)
+    
+    # Create sample tasks with different Eisenhower categories
+    sample_tasks = [
+        # DO - Urgent & Important
+        {
+            "title": "Fix Critical Security Vulnerability",
+            "description": "Address security issue reported by security audit",
+            "assigned_to": created_users[1].id,
+            "project_id": created_projects[0].id,
+            "priority": Priority.URGENT,
+            "due_date": datetime.utcnow() + timedelta(days=1),
+            "tags": ["security", "urgent", "critical"]
+        },
+        # DECIDE - Important but Not Urgent
+        {
+            "title": "Plan Q3 Marketing Strategy",
+            "description": "Develop comprehensive marketing plan for next quarter",
+            "assigned_to": created_users[2].id,
+            "priority": Priority.HIGH,
+            "due_date": datetime.utcnow() + timedelta(days=14),
+            "tags": ["strategy", "marketing", "planning"]
+        },
+        # DELEGATE - Urgent but Not Important
+        {
+            "title": "Update Meeting Room Booking System",
+            "description": "Small updates to the room booking interface",
+            "assigned_to": created_users[3].id,
+            "priority": Priority.LOW,
+            "due_date": datetime.utcnow() + timedelta(days=2),
+            "tags": ["admin", "booking", "update"]
+        },
+        # DELETE - Neither Urgent nor Important
+        {
+            "title": "Research Industry Trends",
+            "description": "General research on industry trends and competitors",
+            "assigned_to": created_users[4].id,
+            "priority": Priority.LOW,
+            "due_date": datetime.utcnow() + timedelta(days=30),
+            "tags": ["research", "trends", "optional"]
+        },
+        # Additional tasks for demonstration
+        {
+            "title": "Design Mobile App UI",
+            "description": "Create user interface designs for the mobile application",
+            "assigned_to": created_users[2].id,
+            "project_id": created_projects[1].id,
+            "priority": Priority.HIGH,
+            "due_date": datetime.utcnow() + timedelta(days=10),
+            "tags": ["design", "ui", "mobile"]
+        },
+        {
+            "title": "Write API Documentation",
+            "description": "Document all API endpoints for the new system",
+            "assigned_to": created_users[1].id,
+            "project_id": created_projects[0].id,
+            "priority": Priority.MEDIUM,
+            "due_date": datetime.utcnow() + timedelta(days=7),
+            "tags": ["documentation", "api", "development"]
+        }
+    ]
+    
+    created_tasks = []
+    for task_data in sample_tasks:
+        # Calculate Eisenhower quadrant
+        eisenhower_quadrant = calculate_eisenhower_quadrant(
+            task_data["priority"], 
+            task_data["due_date"]
+        )
+        task_data["eisenhower_quadrant"] = eisenhower_quadrant
+        
+        task = Task(**task_data)
+        await db.tasks.insert_one(task.dict())
+        created_tasks.append(task)
+        
+        # Update user task count
+        await db.users.update_one(
+            {"id": task.assigned_to},
+            {"$inc": {"tasks_assigned": 1}}
+        )
+    
+    # Complete some tasks and add ratings
+    completed_task_updates = [
+        {
+            "task_id": created_tasks[4].id,  # Design Mobile App UI
+            "status": TaskStatus.COMPLETED,
+            "quality_rating": 9,
+            "feedback": "Excellent design work with great attention to detail"
+        },
+        {
+            "task_id": created_tasks[5].id,  # Write API Documentation
+            "status": TaskStatus.COMPLETED,
+            "quality_rating": 8,
+            "feedback": "Comprehensive documentation, well structured"
+        }
+    ]
+    
+    for update in completed_task_updates:
+        await db.tasks.update_one(
+            {"id": update["task_id"]},
+            {
+                "$set": {
+                    "status": update["status"],
+                    "quality_rating": update["quality_rating"],
+                    "feedback": update["feedback"],
+                    "completed_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Update user completed count
+        task = await db.tasks.find_one({"id": update["task_id"]})
+        await db.users.update_one(
+            {"id": task["assigned_to"]},
+            {"$inc": {"tasks_completed": 1}}
+        )
+    
+    # Set some tasks to in_progress
+    await db.tasks.update_one(
+        {"id": created_tasks[0].id},  # Security vulnerability
+        {"$set": {"status": TaskStatus.IN_PROGRESS}}
+    )
+    
+    await db.tasks.update_one(
+        {"id": created_tasks[1].id},  # Marketing strategy
+        {"$set": {"status": TaskStatus.IN_PROGRESS}}
+    )
+    
+    return {
+        "message": "Sample data populated successfully",
+        "users_created": len(created_users),
+        "projects_created": len(created_projects),
+        "tasks_created": len(created_tasks)
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
