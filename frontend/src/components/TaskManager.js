@@ -237,14 +237,21 @@ const TaskManager = ({ currentUser, users }) => {
 
       {/* Create/Edit Task Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => {
+          console.log('Modal overlay clicked');
+          setShowModal(false);
+        }}>
+          <div className="modal-content" onClick={(e) => {
+            console.log('Modal content clicked');
+            e.stopPropagation();
+          }}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">
                 {editingTask ? 'Edit Task' : 'Create New Task'}
               </h3>
               <button
                 onClick={() => {
+                  console.log('Close button clicked');
                   setShowModal(false);
                   setEditingTask(null);
                   setNewTask({
