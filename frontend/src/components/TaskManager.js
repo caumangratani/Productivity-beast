@@ -129,18 +129,27 @@ const TaskManager = ({ currentUser, users }) => {
             {showModal && <span className="text-red-500 ml-2">(Modal Open)</span>}
           </p>
         </div>
-        <button
-          onClick={() => {
-            console.log('Add Task button clicked');
-            setShowModal(true);
-          }}
-          className="btn-primary"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add Task
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => {
+              console.log('Add Task button clicked, showModal currently:', showModal);
+              setShowModal(true);
+              console.log('setShowModal(true) called');
+            }}
+            className="btn-primary"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add Task
+          </button>
+          <button
+            onClick={() => alert(`Users loaded: ${users.length}, Show modal: ${showModal}`)}
+            className="btn-secondary"
+          >
+            Debug Info
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
