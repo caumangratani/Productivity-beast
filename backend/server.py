@@ -807,6 +807,206 @@ async def populate_sample_data():
         "tasks_created": len(created_tasks)
     }
 
+# AI Integration Settings
+class AISettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    company_id: str
+    openai_api_key: Optional[str] = None
+    claude_api_key: Optional[str] = None
+    preferred_ai_provider: str = "openai"  # openai, claude, both
+    ai_enabled: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class WhatsAppSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    company_id: str
+    whatsapp_business_account_id: Optional[str] = None
+    whatsapp_access_token: Optional[str] = None
+    webhook_verify_token: Optional[str] = None
+    phone_number_id: Optional[str] = None
+    enabled: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+@api_router.post("/integrations/ai-settings")
+async def update_ai_settings(settings: AISettings, current_user: User = Depends(get_current_user)):
+    settings.company_id = current_user.company_id
+    
+    # Update or create AI settings
+    await db.ai_settings.replace_one(
+        {"company_id": settings.company_id},
+        settings.dict(),
+        upsert=True
+    )
+    
+    return {"success": True, "message": "AI settings updated"}
+
+@api_router.get("/integrations/ai-settings")
+async def get_ai_settings(current_user: User = Depends(get_current_user)):
+    settings = await db.ai_settings.find_one({"company_id": current_user.company_id})
+    if settings:
+        # Don't return actual API keys for security
+        settings["openai_api_key"] = "***" if settings.get("openai_api_key") else None
+        settings["claude_api_key"] = "***" if settings.get("claude_api_key") else None
+        return settings
+    return {"company_id": current_user.company_id, "ai_enabled": False}
+
+@api_router.post("/integrations/whatsapp-settings")
+async def update_whatsapp_settings(settings: WhatsAppSettings, current_user: User = Depends(get_current_user)):
+    settings.company_id = current_user.company_id
+    
+    # Update or create WhatsApp settings
+    await db.whatsapp_settings.replace_one(
+        {"company_id": settings.company_id},
+        settings.dict(),
+        upsert=True
+    )
+    
+    return {"success": True, "message": "WhatsApp settings updated"}
+
+@api_router.get("/integrations/whatsapp-settings")
+async def get_whatsapp_settings(current_user: User = Depends(get_current_user)):
+    settings = await db.whatsapp_settings.find_one({"company_id": current_user.company_id})
+    if settings:
+        # Don't return actual tokens for security
+        settings["whatsapp_access_token"] = "***" if settings.get("whatsapp_access_token") else None
+        return settings
+    return {"company_id": current_user.company_id, "enabled": False}
+
+# Enhanced AI Coach with real AI integration
+@api_router.post("/ai-coach/chat")
+async def ai_chat(request: dict, current_user: User = Depends(get_current_user)):
+    message = request.get("message", "")
+    ai_provider = request.get("provider", "openai")
+    
+    # Get AI settings
+    ai_settings = await db.ai_settings.find_one({"company_id": current_user.company_id})
+    if not ai_settings or not ai_settings.get("ai_enabled"):
+        return {"error": "AI integration not configured"}
+    
+    # For now, return enhanced responses (placeholder for real AI integration)
+    enhanced_response = generate_enhanced_ai_response(message, current_user)
+    
+    return {
+        "response": enhanced_response,
+        "provider": ai_provider,
+        "timestamp": datetime.utcnow()
+    }
+
+def generate_enhanced_ai_response(user_message: str, user: User) -> str:
+    """Enhanced AI response generation - placeholder for real AI integration"""
+    
+    lower_message = user_message.lower()
+    user_name = user.name.split()[0]  # First name
+    
+    if any(word in lower_message for word in ['hello', 'hi', 'hey']):
+        return f"Hello {user_name}! 👋 I'm your AI Productivity Coach. I'm here to help you optimize your workflow, manage tasks more effectively, and boost your team's productivity. What would you like to focus on today?"
+    
+    if any(word in lower_message for word in ['stuck', 'overwhelmed', 'help']):
+        return f"I understand you're feeling stuck, {user_name}. Let me help you break through this! 💪\n\n**Here's my immediate action plan:**\n\n1. **Prioritize ruthlessly** - Use the Eisenhower Matrix to focus on what truly matters\n2. **Break it down** - Large tasks feel overwhelming; split them into 15-minute chunks\n3. **Start with momentum** - Pick the easiest task first to build confidence\n4. **Time-box everything** - Set a timer for focused work sessions\n\nWhich of these strategies feels most relevant to your current situation?"
+    
+    if any(word in lower_message for word in ['productivity', 'improve', 'better', 'efficient']):
+        return f"Great question, {user_name}! Based on productivity research and best practices, here's your personalized improvement roadmap:\n\n**🎯 High-Impact Strategies:**\n\n• **Energy Management** - Schedule important tasks during your peak energy hours\n• **Batch Processing** - Group similar tasks together (emails, calls, planning)\n• **Two-Minute Rule** - If it takes less than 2 minutes, do it immediately\n• **Weekly Reviews** - Spend 30 minutes every Friday planning next week\n\n**📊 Measurement Tips:**\n• Track completion rates, not just hours worked\n• Monitor energy levels throughout the day\n• Celebrate small wins to maintain motivation\n\nWould you like me to analyze your current task patterns and suggest specific optimizations?"
+    
+    if any(word in lower_message for word in ['team', 'collaboration', 'meeting']):
+        return f"Team productivity is crucial for success, {user_name}! Here's how to optimize team collaboration:\n\n**🤝 Team Optimization Framework:**\n\n1. **Clear Communication Protocols**\n   - Daily stand-ups (max 15 min)\n   - Async updates for non-urgent items\n   - Defined decision-making processes\n\n2. **Smart Meeting Management**\n   - Default to 25/50 minute meetings\n   - Always have a clear agenda\n   - End with action items and owners\n\n3. **Workload Balance**\n   - Regular check-ins on team capacity\n   - Cross-training to prevent bottlenecks\n   - Fair distribution of challenging tasks\n\nWhat specific team challenge would you like me to help address?"
+    
+    if any(word in lower_message for word in ['goal', 'target', 'objective']):
+        return f"Goal setting is fundamental to productivity, {user_name}! Let me share the SMART+ framework:\n\n**🎯 SMART+ Goals Framework:**\n\n• **Specific** - Clear, well-defined outcomes\n• **Measurable** - Trackable metrics and milestones\n• **Achievable** - Realistic given current resources\n• **Relevant** - Aligned with bigger picture priorities\n• **Time-bound** - Clear deadlines and checkpoints\n• **+ Exciting** - Goals that motivate and inspire you\n\n**💡 Pro Implementation Tips:**\n- Break large goals into weekly mini-goals\n- Track leading indicators, not just results\n- Review and adjust monthly based on learnings\n- Celebrate progress milestones\n\nWhat specific goal would you like help structuring using this framework?"
+    
+    if any(word in lower_message for word in ['stress', 'burnout', 'tired', 'exhausted']):
+        return f"I hear you, {user_name}. Productivity isn't about working more - it's about working sustainably. 🌱\n\n**Immediate Stress Relief Plan:**\n\n1. **Take a break right now** - Even 5 minutes helps reset your mind\n2. **Audit your commitments** - What can you delegate, defer, or delete?\n3. **Protect your energy** - Say no to non-essential requests this week\n4. **Focus on recovery** - Prioritize sleep, nutrition, and movement\n\n**Long-term Prevention:**\n• Set realistic daily task limits (3-5 important tasks max)\n• Build buffer time into your schedule (25% extra)\n• Practice the 'good enough' principle for non-critical tasks\n• Regular check-ins with yourself about workload\n\nRemember: A rested, focused you is infinitely more productive than an exhausted, scattered you. What's one thing you can remove from your plate today?"
+    
+    return f"That's an insightful point, {user_name}! Based on the latest productivity research and behavioral psychology, here's my perspective:\n\n**Key Principle: Sustainable High Performance**\n\nTrue productivity comes from:\n• **Clarity** - Knowing exactly what needs to be done\n• **Focus** - Single-tasking with deep attention\n• **Energy Management** - Working with your natural rhythms\n• **Continuous Improvement** - Small, consistent optimizations\n\n**Actionable Next Steps:**\n1. Identify your #1 priority for today\n2. Eliminate or minimize distractions for the next hour\n3. Work in focused 25-minute blocks with 5-minute breaks\n4. Track what works and iterate\n\nWhat specific productivity challenge can I help you tackle right now? I can analyze your current task patterns and suggest personalized improvements."
+
+# WhatsApp Webhook endpoint
+@api_router.post("/integrations/whatsapp/webhook")
+async def whatsapp_webhook(request: dict):
+    """Handle WhatsApp Business API webhooks"""
+    
+    # This is a placeholder for WhatsApp integration
+    # Users will configure their own WhatsApp Business API
+    
+    if request.get("object") == "whatsapp_business_account":
+        for entry in request.get("entry", []):
+            for change in entry.get("changes", []):
+                if change.get("field") == "messages":
+                    # Process incoming message
+                    messages = change.get("value", {}).get("messages", [])
+                    for message in messages:
+                        # Handle message logic here
+                        await process_whatsapp_message(message)
+    
+    return {"status": "success"}
+
+async def process_whatsapp_message(message: dict):
+    """Process incoming WhatsApp message and create tasks if needed"""
+    
+    # Extract message details
+    phone_number = message.get("from")
+    message_text = message.get("text", {}).get("body", "")
+    
+    # Check if message is a task creation request
+    if "create task" in message_text.lower() or "@productivity" in message_text.lower():
+        # Parse task from message
+        # This is where you'd implement task creation logic
+        pass
+    
+    return {"processed": True}
+
+# Integration guides and setup help
+@api_router.get("/integrations/setup-guide/{integration_type}")
+async def get_setup_guide(integration_type: str):
+    """Get setup guide for specific integration"""
+    
+    guides = {
+        "whatsapp": {
+            "title": "WhatsApp Business API Setup",
+            "steps": [
+                "Create a WhatsApp Business Account",
+                "Set up Facebook Developer Account",
+                "Create a new App and add WhatsApp product",
+                "Configure webhook URL: {BACKEND_URL}/api/integrations/whatsapp/webhook",
+                "Generate access tokens and configure phone number",
+                "Test the integration with a simple message"
+            ],
+            "requirements": [
+                "WhatsApp Business Account",
+                "Facebook Developer Account",
+                "Verified business information"
+            ]
+        },
+        "openai": {
+            "title": "OpenAI API Setup",
+            "steps": [
+                "Create an OpenAI account at platform.openai.com",
+                "Generate an API key from the API section",
+                "Copy the API key to your Productivity Beast settings",
+                "Choose OpenAI as your preferred AI provider",
+                "Test the integration in the AI Coach section"
+            ],
+            "requirements": [
+                "OpenAI Account",
+                "Valid API key with credits"
+            ]
+        },
+        "claude": {
+            "title": "Anthropic Claude API Setup", 
+            "steps": [
+                "Create an Anthropic account at console.anthropic.com",
+                "Generate an API key from your dashboard",
+                "Copy the API key to your Productivity Beast settings",
+                "Choose Claude as your preferred AI provider",
+                "Test the integration in the AI Coach section"
+            ],
+            "requirements": [
+                "Anthropic Account",
+                "Valid API key with credits"
+            ]
+        }
+    }
+    
+    return guides.get(integration_type, {"error": "Integration guide not found"})
+
 # Include the router in the main app
 app.include_router(api_router)
 
