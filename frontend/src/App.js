@@ -81,10 +81,13 @@ function App() {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
       const response = await axios.get(`${API}/users`);
+      console.log('Users fetched:', response.data);
       setUsers(response.data);
       if (response.data.length > 0 && !currentUser) {
         setCurrentUser(response.data[0]);
+        console.log('Current user set to:', response.data[0]);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
