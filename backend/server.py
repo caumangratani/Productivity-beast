@@ -136,6 +136,11 @@ def calculate_eisenhower_quadrant(priority: Priority, due_date: Optional[datetim
         else:
             return EisenhowerQuadrant.DELETE
     
+    # Handle timezone-aware datetime
+    if due_date.tzinfo is not None:
+        # Remove timezone info to compare with naive datetime
+        due_date = due_date.replace(tzinfo=None)
+    
     days_until_due = (due_date - datetime.utcnow()).days
     is_urgent = days_until_due <= 2  # 2 days or less is urgent
     is_important = priority in [Priority.HIGH, Priority.URGENT]
