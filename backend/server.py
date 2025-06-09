@@ -77,6 +77,7 @@ class User(BaseModel):
     tasks_assigned: int = 0
     tasks_overdue: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    company_id: Optional[str] = None
 
 class UserCreate(BaseModel):
     name: str
