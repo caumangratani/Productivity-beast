@@ -123,7 +123,10 @@ const TaskManager = ({ currentUser, users }) => {
           <p className="text-gray-600 mt-1">Manage your individual tasks with AI-powered prioritization</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            console.log('Add Task button clicked');
+            setShowModal(true);
+          }}
           className="btn-primary"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
