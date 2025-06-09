@@ -227,7 +227,9 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
 class UserCreate(BaseModel):
     name: str
     email: str
-    role: str = "team_member"
+    password: str
+    company: str
+    plan: PlanType = PlanType.PERSONAL
 
 class Task(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
