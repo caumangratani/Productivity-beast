@@ -31,17 +31,20 @@ const LandingPage = ({ onLogin }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
+      console.log('Attempting login with:', { email: formData.email, password: formData.password });
       const response = await axios.post(`${API}/auth/login`, {
         email: formData.email,
         password: formData.password
       });
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
+      console.log('Login response:', response.data);
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         onLogin(response.data.user);
       }
     } catch (error) {
-      alert('Login failed: ' + error.response?.data?.message || error.message);
+      console.error('Login error:', error);
+      alert('Login failed: ' + (error.response?.data?.detail || error.message));
     }
   };
 
