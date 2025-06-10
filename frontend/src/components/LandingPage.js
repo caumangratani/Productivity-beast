@@ -4,9 +4,22 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Razorpay payment integration
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const LandingPage = ({ onLogin }) => {
   const [showSignup, setShowSignup] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,6 +27,82 @@ const LandingPage = ({ onLogin }) => {
     company: '',
     plan: 'personal'
   });
+
+  const plans = {
+    personal: { name: 'Personal', price: 2000, features: ['Personal task management', 'AI task prioritization', 'Basic analytics', 'Mobile app access', 'Email support'] },
+    team: { name: 'Team', price: 5000, features: ['Everything in Personal', 'Up to 25 team members', 'Project management & Kanban', 'Team performance analytics', 'AI productivity coach', 'Priority support'] },
+    enterprise: { name: 'Enterprise', price: 7000, features: ['Everything in Team', 'Unlimited team members', 'Custom API integrations', 'WhatsApp Business API', 'Advanced AI features', '24/7 dedicated support', 'Custom training & onboarding'] }
+  };
+
+  const handlePayment = async (planType) => {
+    const plan = plans[planType];
+    setSelectedPlan({ ...plan, type: planType });
+    
+    // Load Razorpay script
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) {
+      alert('Payment system failed to load. Please try again.');
+      return;
+    }
+
+    try {
+      // Create order
+      const orderResponse = await axios.post(`${API}/payment/create-order`, {
+        amount: plan.price * 100, // Convert to paise
+        currency: 'INR',
+        plan: planType
+      });
+
+      const options = {
+        key: 'rzp_test_9WzaP4XKo0z9By', // Test key - replace with live key
+        amount: orderResponse.data.amount,
+        currency: orderResponse.data.currency,
+        name: 'Productivity Beast',
+        description: `${plan.name} Plan Subscription`,
+        image: '/logo.png',
+        order_id: orderResponse.data.id,
+        handler: async (response) => {
+          try {
+            // Verify payment
+            const verifyResponse = await axios.post(`${API}/payment/verify`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              plan: planType
+            });
+
+            if (verifyResponse.data.success) {
+              alert('Payment successful! Your account has been activated.');
+              // Auto-create account and login
+              const userData = verifyResponse.data.user;
+              localStorage.setItem('token', verifyResponse.data.token);
+              localStorage.setItem('user', JSON.stringify(userData));
+              onLogin(userData);
+            }
+          } catch (error) {
+            alert('Payment verification failed: ' + error.message);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: '9999999999'
+        },
+        notes: {
+          plan: planType,
+          company: formData.company
+        },
+        theme: {
+          color: '#6366f1'
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      alert('Payment setup failed: ' + error.message);
+    }
+  };
 
   const handleSignup = async (e) => {
     e.preventDefault();
