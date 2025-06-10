@@ -385,11 +385,11 @@ const LandingPage = ({ onLogin }) => {
             <button
               onClick={() => {
                 setFormData({...formData, plan: 'personal'});
-                setShowSignup(true);
+                handlePayment('personal');
               }}
               className="btn-secondary w-full"
             >
-              Start Free Trial
+              Subscribe Now - ₹2,000/month
             </button>
           </div>
 
