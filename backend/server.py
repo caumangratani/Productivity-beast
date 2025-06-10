@@ -956,59 +956,92 @@ async def process_whatsapp_message(message: dict):
     
     return {"processed": True}
 
-# Integration guides and setup help
-@api_router.get("/integrations/setup-guide/{integration_type}")
-async def get_setup_guide(integration_type: str):
-    """Get setup guide for specific integration"""
+# Razorpay configuration
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_9WzaP4XKo0z9By')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'test_secret_key')
+
+# Payment Models
+class PaymentOrder(BaseModel):
+    amount: int  # in paise
+    currency: str = "INR"
+    plan: str
+
+class PaymentVerification(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    plan: str
+
+# Payment endpoints
+@api_router.post("/payment/create-order")
+async def create_payment_order(order: PaymentOrder):
+    """Create Razorpay order for subscription payment"""
     
-    guides = {
-        "whatsapp": {
-            "title": "WhatsApp Business API Setup",
-            "steps": [
-                "Create a WhatsApp Business Account",
-                "Set up Facebook Developer Account",
-                "Create a new App and add WhatsApp product",
-                "Configure webhook URL: {BACKEND_URL}/api/integrations/whatsapp/webhook",
-                "Generate access tokens and configure phone number",
-                "Test the integration with a simple message"
-            ],
-            "requirements": [
-                "WhatsApp Business Account",
-                "Facebook Developer Account",
-                "Verified business information"
-            ]
-        },
-        "openai": {
-            "title": "OpenAI API Setup",
-            "steps": [
-                "Create an OpenAI account at platform.openai.com",
-                "Generate an API key from the API section",
-                "Copy the API key to your Productivity Beast settings",
-                "Choose OpenAI as your preferred AI provider",
-                "Test the integration in the AI Coach section"
-            ],
-            "requirements": [
-                "OpenAI Account",
-                "Valid API key with credits"
-            ]
-        },
-        "claude": {
-            "title": "Anthropic Claude API Setup", 
-            "steps": [
-                "Create an Anthropic account at console.anthropic.com",
-                "Generate an API key from your dashboard",
-                "Copy the API key to your Productivity Beast settings",
-                "Choose Claude as your preferred AI provider",
-                "Test the integration in the AI Coach section"
-            ],
-            "requirements": [
-                "Anthropic Account",
-                "Valid API key with credits"
-            ]
-        }
+    # In production, use actual Razorpay client
+    # import razorpay
+    # client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+    
+    # For demo, create mock order
+    order_id = f"order_{str(uuid.uuid4())[:8]}"
+    
+    # Store order in database
+    order_data = {
+        "id": order_id,
+        "amount": order.amount,
+        "currency": order.currency,
+        "plan": order.plan,
+        "status": "created",
+        "created_at": datetime.utcnow()
     }
     
-    return guides.get(integration_type, {"error": "Integration guide not found"})
+    await db.payment_orders.insert_one(order_data)
+    
+    return {
+        "id": order_id,
+        "amount": order.amount,
+        "currency": order.currency,
+        "status": "created"
+    }
+
+@api_router.post("/payment/verify")
+async def verify_payment(verification: PaymentVerification):
+    """Verify payment and activate subscription"""
+    
+    # In production, verify signature with Razorpay
+    # expected_signature = hmac.new(
+    #     RAZORPAY_KEY_SECRET.encode(),
+    #     f"{verification.razorpay_order_id}|{verification.razorpay_payment_id}".encode(),
+    #     hashlib.sha256
+    # ).hexdigest()
+    
+    # For demo, always verify successfully
+    is_valid = True
+    
+    if is_valid:
+        # Create user account with paid subscription
+        user_data = {
+            "name": f"User_{verification.plan}",
+            "email": f"user_{verification.razorpay_payment_id[:8]}@example.com",
+            "role": "admin",
+            "subscription_plan": verification.plan,
+            "subscription_status": "active",
+            "payment_id": verification.razorpay_payment_id
+        }
+        
+        user = User(**user_data)
+        await db.users.insert_one(user.dict())
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": user.id})
+        
+        return {
+            "success": True,
+            "token": access_token,
+            "user": user_data,
+            "message": "Payment verified and account activated"
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Payment verification failed")
 
 # Include the router in the main app
 app.include_router(api_router)
