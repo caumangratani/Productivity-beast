@@ -885,17 +885,58 @@ async def ai_chat(request: dict, current_user: User = Depends(get_current_user))
     
     # Get AI settings
     ai_settings = await db.ai_settings.find_one({"company_id": current_user.company_id})
-    if not ai_settings or not ai_settings.get("ai_enabled"):
-        return {"error": "AI integration not configured"}
     
-    # For now, return enhanced responses (placeholder for real AI integration)
-    enhanced_response = generate_enhanced_ai_response(message, current_user)
-    
-    return {
-        "response": enhanced_response,
-        "provider": ai_provider,
-        "timestamp": datetime.utcnow()
-    }
+    try:
+        if ai_provider == "openai" and ai_settings and ai_settings.get("openai_api_key"):
+            # Use OpenAI
+            from openai import OpenAI
+            client = OpenAI(api_key=ai_settings["openai_api_key"])
+            
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a productivity coach helping users optimize their work efficiency. Provide actionable, practical advice."},
+                    {"role": "user", "content": message}
+                ],
+                max_tokens=500,
+                temperature=0.7
+            )
+            
+            ai_response = response.choices[0].message.content
+            
+        elif ai_provider == "claude" and ai_settings and ai_settings.get("claude_api_key"):
+            # Use Claude
+            import anthropic
+            client = anthropic.Anthropic(api_key=ai_settings["claude_api_key"])
+            
+            response = client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=500,
+                messages=[
+                    {"role": "user", "content": f"As a productivity coach, help me with: {message}"}
+                ]
+            )
+            
+            ai_response = response.content[0].text
+            
+        else:
+            # Use enhanced fallback response
+            ai_response = generate_enhanced_ai_response(message, current_user)
+            
+        return {
+            "response": ai_response,
+            "provider": ai_provider,
+            "timestamp": datetime.utcnow()
+        }
+        
+    except Exception as e:
+        # Fallback to enhanced response if AI fails
+        enhanced_response = generate_enhanced_ai_response(message, current_user)
+        return {
+            "response": enhanced_response + f"\n\n(Note: Using fallback AI - {str(e)[:50]}...)",
+            "provider": "fallback",
+            "timestamp": datetime.utcnow()
+        }
 
 def generate_enhanced_ai_response(user_message: str, user: User) -> str:
     """Enhanced AI response generation - placeholder for real AI integration"""
