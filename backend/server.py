@@ -14,6 +14,9 @@ from enum import Enum
 import jwt
 import bcrypt
 from passlib.context import CryptContext
+import requests
+import hmac
+import hashlib
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
