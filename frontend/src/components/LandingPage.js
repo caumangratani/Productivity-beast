@@ -511,11 +511,11 @@ const LandingPage = ({ onLogin }) => {
             <button
               onClick={() => {
                 setFormData({...formData, plan: 'enterprise'});
-                setShowSignup(true);
+                handlePayment('enterprise');
               }}
               className="btn-secondary w-full"
             >
-              Contact Sales
+              Subscribe Now - ₹7,000/month
             </button>
           </div>
         </div>
