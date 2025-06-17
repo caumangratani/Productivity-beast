@@ -228,15 +228,18 @@
 
   - task: "Personal Task Manager"
     implemented: true
-    working: false  # Needs testing
+    working: false
     file: "/app/frontend/src/components/TaskManager.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
         - agent: "main"
         - comment: "Individual task management with AI prioritization display and CRUD operations"
+        - working: false
+        - agent: "testing"
+        - comment: "Unable to test the Personal Task Manager functionality due to login issues. Could not access the task manager to verify AI prioritization display and CRUD operations."
 
   - task: "Team Project Manager with Kanban"
     implemented: true
