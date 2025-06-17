@@ -66,7 +66,9 @@ def test_user_management():
         user_data = {
             "name": f"Test User {i}",
             "email": f"testuser{i}@example.com",
-            "role": "team_member" if i < 2 else "manager"
+            "password": f"SecurePassword{i}!",
+            "company": "Test Company",
+            "plan": "personal"
         }
         
         response = requests.post(f"{API_URL}/users", json=user_data)
@@ -75,7 +77,6 @@ def test_user_management():
         user = response.json()
         assert user["name"] == user_data["name"]
         assert user["email"] == user_data["email"]
-        assert user["role"] == user_data["role"]
         assert "id" in user
         
         test_users.append(user)
