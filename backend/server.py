@@ -1157,31 +1157,58 @@ async def get_whatsapp_settings(current_user: User = Depends(get_current_user)):
 
 # Enhanced AI Coach with real AI integration
 @api_router.post("/ai-coach/chat")
-async def ai_chat(request: dict, current_user: User = Depends(get_current_user)):
+async def ai_chat(request: dict):
+    """AI Chat endpoint - accessible without authentication for demo"""
     message = request.get("message", "")
     ai_provider = request.get("provider", "openai")
-    
-    # Get AI settings for the user's company
-    ai_settings = await db.ai_settings.find_one({"company_id": current_user.company_id})
+    user_id = request.get("user_id", "demo_user")  # For demo purposes
     
     try:
-        # Enhanced AI response with user context
-        user_context = await get_user_context_for_ai(current_user.id)
-        ai_response = await generate_ai_coaching_response(
-            message, current_user, user_context, ai_provider, ai_settings
-        )
+        # For demo, use the global OpenAI key from environment
+        openai_key = os.environ.get('OPENAI_API_KEY')
         
+        if ai_provider == "openai" and openai_key:
+            # Use OpenAI with environment key
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            
+            # Get user context if user_id provided
+            user_context = await get_user_context_for_ai(user_id) if user_id != "demo_user" else {}
+            
+            # Create system prompt with context
+            system_prompt = f"""You are an expert productivity coach. Provide helpful, actionable advice for improving productivity and task management.
+
+USER CONTEXT: {user_context if user_context else 'No specific user data available - provide general advice'}
+
+Be encouraging, specific, and focus on practical tips."""
+
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ],
+                max_tokens=1000,
+                temperature=0.7
+            )
+            
+            ai_response = response.choices[0].message.content
+            
+        else:
+            # Enhanced fallback response
+            ai_response = await generate_enhanced_coaching_response(message, None, {})
+            
         return {
             "response": ai_response,
-            "provider": ai_provider,
+            "provider": ai_provider if openai_key else "enhanced_fallback",
             "timestamp": datetime.utcnow(),
-            "user_context_used": True
+            "user_context_used": bool(user_id != "demo_user")
         }
         
     except Exception as e:
         logger.error(f"AI Chat error: {str(e)}")
         # Enhanced fallback response
-        enhanced_response = await generate_enhanced_coaching_response(message, current_user)
+        enhanced_response = await generate_enhanced_coaching_response(message, None, {})
         return {
             "response": enhanced_response,
             "provider": "enhanced_fallback",
