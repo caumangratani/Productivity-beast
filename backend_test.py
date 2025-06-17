@@ -395,6 +395,50 @@ def test_auth_endpoints():
     
     logger.info("Authentication endpoints tests passed")
 
+def test_ai_coach_chat():
+    """Test AI coach chat endpoint"""
+    # First, we need to authenticate to get a token
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    signup_data = {
+        "name": "AI Coach Test User",
+        "email": f"aicoachtest_{timestamp}@example.com",
+        "password": "SecureAICoachPassword!",
+        "company": "AI Coach Test Company",
+        "plan": "personal"
+    }
+    
+    # Create user
+    response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+    assert response.status_code == 200, f"Failed to signup: {response.text}"
+    
+    # Login
+    login_data = {
+        "email": signup_data["email"],
+        "password": signup_data["password"]
+    }
+    
+    response = requests.post(f"{API_URL}/auth/login", json=login_data)
+    assert response.status_code == 200, f"Failed to login: {response.text}"
+    login_result = response.json()
+    token = login_result["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Test AI coach chat
+    chat_data = {
+        "message": "How can I improve my productivity?",
+        "provider": "fallback"  # Use fallback to avoid needing real API keys
+    }
+    
+    response = requests.post(f"{API_URL}/ai-coach/chat", json=chat_data, headers=headers)
+    assert response.status_code == 200, f"Failed to get AI coach response: {response.text}"
+    chat_result = response.json()
+    assert "response" in chat_result
+    assert "provider" in chat_result
+    assert "timestamp" in chat_result
+    assert len(chat_result["response"]) > 0
+    
+    logger.info("AI coach chat test passed")
+
 if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
@@ -409,6 +453,7 @@ if __name__ == "__main__":
         test_task_deletion()
         test_sample_data_population()
         test_auth_endpoints()
+        test_ai_coach_chat()
         
         logger.info("All tests passed successfully!")
     except Exception as e:
