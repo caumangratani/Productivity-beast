@@ -340,7 +340,17 @@
     - "Team Performance Analytics"
     - "AI Coach interface"
     - "CSS styling with design principles"
-  stuck_tasks: []
+    - "WhatsApp Integration"
+    - "Team Management"
+  stuck_tasks:
+    - "Main App component with navigation"
+    - "Dashboard with analytics"
+    - "Personal Task Manager"
+    - "Team Project Manager with Kanban"
+    - "Team Performance Analytics"
+    - "AI Coach interface"
+    - "WhatsApp Integration"
+    - "Team Management"
   test_all: true
   test_priority: "high_first"
 
