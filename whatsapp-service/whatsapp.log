@@ -1,0 +1,153 @@
+
+> whatsapp-service@1.0.0 start
+> node server.js
+
+🌐 WhatsApp service running on port 3001
+📱 FastAPI URL: https://ee90ce40-e7e1-4fc3-b144-06755894b42a.preview.emergentagent.com
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:39:56.495Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"bss0g76beuaJiSnIcc92Hiu0gfn1VRuLNMKdDS9s/Dk="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:39:56.566Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAuA==","eKeytype":"BQ==","eIdent":"MWWPGOGvUmsVSO6wf4WS8xMpnRlNmfpsc0Cmr9NeD0U=","eSkeyId":"AAAB","eSkeyVal":"alAb4CDf/FofwQchkpCCMIiR2vj3/MvkT6m6z9JooSw=","eSkeySig":"V5USkLK63tB0Z53owgRwY/cZ8rF5bvRLKfpXpCI8jGTYVrK7e+zaKwMA4aP50uk7RB7lVt80+M0KpuLP4gmngw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T11:42:36.825Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:42:42.060Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"mwVrQ7pjBF3bZZiz/X4uM+PsGN1d/SJX51aUA2gmZzI="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:42:42.205Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAfg==","eKeytype":"BQ==","eIdent":"n2wEMVvydpCT6JupUythJfZC+vKgBg0lqPhV1K7SqyQ=","eSkeyId":"AAAB","eSkeyVal":"/rcX8qrG/Qdjt3cKg/13nKc666eIVpc1Gj6XijytfzA=","eSkeySig":"WbviQUNdTUsETfzHBebKYINVy9HWmtQA7XA0CP1ZRJQYJARmAheRSaFaHKxE+3Xt6x98cRqFSXhgjoRdK/SODw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T11:45:22.532Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:45:27.708Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"L/m6fSX3vfqXoHAuzAI20zcYqVwLcKgwni843XoVc3A="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:45:27.762Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAjQ==","eKeytype":"BQ==","eIdent":"C6VBNJsvVzrKaXkSbtoGUVhucVYsKf9OaEHU7nyQ9BE=","eSkeyId":"AAAB","eSkeyVal":"Z7MAwkf3lD1mxT3+9DXQs1rfk645Jw0oN3eSWkZn/Qo=","eSkeySig":"/0zec3AhoU74zQUNMBDgZRRQ0fvWSenX0dYXMqg2KQS1KnpTvzSUIClwvFqw9JtNCQ/FDSMONn13QVhBcXO7AA==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T11:48:08.013Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:48:13.178Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"ER0opm8+GIEsV5f2+55iJy77+2IwaIqAlGvMA7eQH3o="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:48:13.226Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAqQ==","eKeytype":"BQ==","eIdent":"jMjTfM/lGqFslyfUzG5P5HGr6giNkpGHh3AKnKGTKkI=","eSkeyId":"AAAB","eSkeyVal":"T3w1YiNyeRjveayQ/a2pA9+lK9GrQVbsSu46U5zxZFg=","eSkeySig":"niIOebKPI88+EhzbkXz+Ve3OxzkH9/h6GIVvq3lVqhwSCXBqt9soT2rDqQDnEw5m4s3rkXcHHtm6yIvXxLMYAQ==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T11:50:53.448Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:50:58.597Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"k7SbDxh+gEr80iPVoEEjGEIwrATn0heH9Vrzk4jJnmw="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:50:58.634Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAAQ==","eKeytype":"BQ==","eIdent":"sgLJpP4A1T+hdd8krZdcpNgfZzbKdUZZohcBAZL0W0c=","eSkeyId":"AAAB","eSkeyVal":"2cOWl/Z0TqWjtkbkK85UUOVgDKcLR8rXylH8dvLVllU=","eSkeySig":"HAdJc7LVLIqxN7UZ8/yimqxaae2istFkPDrbGRqN4+ACi7RxkHfMd0kc2OcpwbJt/k9ttE7rOZwM1JomU7oSgw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T11:53:38.823Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:53:43.989Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"zbZj+7+RnqdRgjI++8B4F13ny4pcNqWex2A/GLmVNHo="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:53:44.055Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAyQ==","eKeytype":"BQ==","eIdent":"Uqv5gVk08nmqUDxQltvhnQbHaZGC+TvU++COP7AljGk=","eSkeyId":"AAAB","eSkeyVal":"5R4pqgkPX6rWuZ0+946Ly0UOEyn6bNzvmldtbahmfww=","eSkeySig":"xWyFW12pesTRnBG6ZZL1ZOLxuffPOQC6atUQrTC8JK21xkT/9ISCtCha4QzqvJiIkqsGZArKsd5f8OZ0pOGbCw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T11:56:24.300Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:56:29.506Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"17LjX4VMT9AqoNxN11Lxna6rKRLI8da8lIhZFpuhVGg="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:56:29.615Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAA/w==","eKeytype":"BQ==","eIdent":"S/epDNBiVbnfNXsL1iA1AwfyvvxH54F8IjZ57vVD7wo=","eSkeyId":"AAAB","eSkeyVal":"Im5RzV2HZ5hpxee979W1vK0tKtOBNYAAHS+1Waw9LEs=","eSkeySig":"gy1mNk/7ZggIWyBPb5AbqR6kD6h5RGaM981v7W3KFEkojfYpFCOB+C6maitl656lLppP3G5DaGxfHaTKR8ryjQ==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T11:59:09.919Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T11:59:15.070Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"XGp7obDZUVvD8/n6+xHQYsmsWcYTreLZBDyY6pOx+kw="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T11:59:15.138Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAiw==","eKeytype":"BQ==","eIdent":"tEAq7BDscx3DR9HRQ49Ay4LQYiNY9SVLI8kHEnNLXWc=","eSkeyId":"AAAB","eSkeyVal":"KbCCqsggCJP6EpALbhWh34aVvz5yUA7DlKvJrBtqyB4=","eSkeySig":"p05KCKA8ZUI3WLUvuFLsoeM9D+XYtDIp5q3iE2RM1+aP52FqlB33g2ZGqMwsI5w3ELVUaeD5Sddu0SpCpj06DA==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T12:01:55.400Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:02:00.645Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"72lEWsQ3YxNZdEjmXZzVB9MNTeOuyc01aNAw47Am6xI="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:02:00.708Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAABw==","eKeytype":"BQ==","eIdent":"bfLJuPdTfEYuL0PDA2cacEv7MYxfLzcWAHOI8QxvsDM=","eSkeyId":"AAAB","eSkeyVal":"YXxtEj2K8zbz1BjQwf6oTNRQxSkKNNLwo7coCNjXlnI=","eSkeySig":"3g8qsCg6zoKgRqFMOA4rDlvfVf7RjxclfoOQ+Hu2O/1qH9ON3yFAZw+zBttOznTJECkMId7kOYwRtj9SbWD5Bw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+❌ Connection closed: 408 , reconnecting: true
+{"level":30,"time":"2025-06-17T12:04:40.993Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:04:46.119Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"kCLNqjNxf65C9QEvUQXvjlk0z31RZM9EVAJ7PJJvuS4="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:04:46.144Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAmA==","eKeytype":"BQ==","eIdent":"q4E9ms1FUb3R2jWK0UzKWBhTdhZgp3GxRCt1bw2rVBA=","eSkeyId":"AAAB","eSkeyVal":"OCenrQ83GJr0yEimA2IeYSMLSjdz3L9MsiS0OvD7uj8=","eSkeySig":"nSx4XtcAbprr566AntzxIiTMVYNZ/3NHHfwl7ft/OiQcDM/lLL++Ae4runR/n9z9k3SivxPkyV7GnxzKDbDQhw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T12:07:26.315Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:07:31.422Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"70epZ5j765qrLSDmTt4BioCurDHy6YGqeT+wQJPXfUA="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:07:31.445Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAlw==","eKeytype":"BQ==","eIdent":"6LNkxclKAuVI/UwKhVD51xYu1rLKEegtWsJAdauy0ik=","eSkeyId":"AAAB","eSkeyVal":"HbvTpxQVY7pinG+Naf2+PJNL+DGduO36huodjRN/wnc=","eSkeySig":"TzofYCW+z9g7HlxvXJCZS9Hi2P2FKnoHcYCDIGm5fs0LFQUtrqvM9cN92TLLoK2GDNStaY5T1PBRzJ9rQus9AA==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T12:10:11.647Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:10:16.815Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"EwTgaa9pDRUdw3jA/JVnItPuoEQHJvf0nPE8Ri7RQm4="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:10:16.877Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAA5w==","eKeytype":"BQ==","eIdent":"cVl6ANiakg6tCWgBe+rZHoZVdBYJXuEOcNYnNfRLBBg=","eSkeyId":"AAAB","eSkeyVal":"4MMDJ8/YfiOMRN3B8ehl7I7lE40cQLnU8ROOgjp4FHY=","eSkeySig":"qCREWuHLEH/i7zNTy7BQLOpVk2rracQBHneYsW+E+bnuJ6mpIXH9XuTzFlunrHZxeg+chIUjDB+zcMJEhAacgw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T12:12:57.123Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:13:02.255Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"BuiulUTU20OfxjbrJ7o4bLa331UODGRPsfp7WPkdOXA="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:13:02.301Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAjA==","eKeytype":"BQ==","eIdent":"71FuxAl/2N2ITLe6CoxSxoaoImDappnhUuW1KK3mNSM=","eSkeyId":"AAAB","eSkeyVal":"0soOwKrADrkBMrhlVuisiK09/oAnq6YDQkJ8E+sLb0E=","eSkeySig":"8aRkHXXUv+1VJnFVFWEiz3cdvMM/bzyFO8AgwVz4K8DsVf7UHooeoL3gq46ksBuJbbaxCRXxzdn9uKiFdIochA==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+📱 QR Code generated for WhatsApp authentication
+{"level":30,"time":"2025-06-17T12:15:42.541Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","trace":"Error: QR refs attempts ended\n    at Timeout.genPairQR [as _onTimeout] (/app/whatsapp-service/node_modules/@whiskeysockets/baileys/lib/Socket/socket.js:485:21)\n    at listOnTimeout (node:internal/timers:581:17)\n    at process.processTimers (node:internal/timers:519:7)","msg":"connection errored"}
+❌ Connection closed: 408 , reconnecting: true
+🚀 Initializing WhatsApp connection...
+{"level":30,"time":"2025-06-17T12:15:47.677Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"hb08WpumIj2uJW1lWHDpoD7b3hqbQraGrUpdHrLuji4="}},"msg":"connected to WA"}
+{"level":30,"time":"2025-06-17T12:15:47.724Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAA9w==","eKeytype":"BQ==","eIdent":"mLzpOwTavwEGsNALrXQzKRVceTsv9etNtxW45wIl9iY=","eSkeyId":"AAAB","eSkeyVal":"Wpklek0NVSO1veVQ8M8gp8hdRz22w6f2noGXQxYZgmY=","eSkeySig":"EkVpnsMzb623QCH4IdresKCAhBNqmdu7OlXM8KQxXyYt9sAoVEGlJ9sS+J14GJqj5adzERbYpySaZjQWwe92hQ==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}
+📱 QR Code generated for WhatsApp authentication
