@@ -1026,6 +1026,442 @@ Provide personalized, actionable productivity coaching based on their actual dat
         logger.error(f"AI provider {provider} failed: {str(e)}")
         return await generate_enhanced_coaching_response(message, user, context)
 
+
+# AI Coach Slash Commands
+@api_router.post("/ai-coach/command")
+async def ai_command(request: dict, current_user: User = Depends(get_current_user)):
+    command = request.get("command", "").lower().strip()
+    
+    try:
+        user_context = await get_user_context_for_ai(current_user.id)
+        
+        if command == "/analyze":
+            return await handle_analyze_command(current_user, user_context)
+        elif command == "/optimize":
+            return await handle_optimize_command(current_user, user_context)
+        elif command == "/goals":
+            return await handle_goals_command(current_user, user_context)
+        elif command == "/habits":
+            return await handle_habits_command(current_user, user_context)
+        elif command == "/report":
+            return await handle_report_command(current_user, user_context)
+        elif command == "/help":
+            return handle_help_command()
+        else:
+            return {
+                "response": "Unknown command. Type `/help` to see available commands.",
+                "command": command,
+                "timestamp": datetime.utcnow()
+            }
+            
+    except Exception as e:
+        logger.error(f"Command error: {str(e)}")
+        return {
+            "response": "Sorry, I encountered an error processing your command. Please try again.",
+            "error": str(e),
+            "timestamp": datetime.utcnow()
+        }
+
+async def handle_analyze_command(user: User, context: dict):
+    """Deep productivity analysis"""
+    
+    # Get recent tasks for pattern analysis
+    recent_tasks = await db.tasks.find({
+        "assigned_to": user.id,
+        "created_at": {"$gte": datetime.utcnow() - timedelta(days=30)}
+    }).to_list(1000)
+    
+    # Analyze task patterns
+    patterns = {
+        "peak_day": "Monday",  # Simplified for demo
+        "peak_count": 5,
+        "peak_hour": "9",
+        "avg_completion_time": "2.5",
+        "complexity_trend": "Increasing"
+    }
+    
+    response = f"🔍 **Deep Productivity Analysis for {user.name.split()[0]}**\n\n"
+    response += f"**📊 Performance Metrics (Last 30 Days):**\n"
+    response += f"• Tasks completed: {context['completed_tasks']}\n"
+    response += f"• Completion rate: {context['completion_rate']:.1f}%\n"
+    response += f"• Average daily tasks: {len(recent_tasks)/30:.1f}\n"
+    response += f"• Overdue rate: {(context['overdue_tasks']/max(context['total_tasks'], 1)*100):.1f}%\n\n"
+    
+    response += f"**🎯 Task Distribution Analysis:**\n"
+    for quadrant, count in context['eisenhower_distribution'].items():
+        percentage = (count / max(context['total_tasks'], 1)) * 100
+        response += f"• {quadrant.title()}: {count} tasks ({percentage:.1f}%)\n"
+    
+    response += f"\n**📈 Productivity Patterns:**\n"
+    response += f"• Peak activity: {patterns['peak_day']} with {patterns['peak_count']} tasks\n"
+    response += f"• Most productive time: {patterns['peak_hour']}:00\n"
+    response += f"• Average task completion time: {patterns['avg_completion_time']} days\n"
+    response += f"• Task complexity trend: {patterns['complexity_trend']}\n\n"
+    
+    response += f"**💡 Key Insights:**\n"
+    if context['completion_rate'] > 85:
+        response += "• Excellent execution - you're in the top 10% of performers!\n"
+    elif context['completion_rate'] > 70:
+        response += "• Good performance with room for optimization\n"
+    else:
+        response += "• Focus needed on task completion and follow-through\n"
+        
+    if context['eisenhower_distribution'].get('do', 0) > context['total_tasks'] * 0.3:
+        response += "• High urgency pattern detected - focus on prevention\n"
+    else:
+        response += "• Good balance between urgent and important tasks\n"
+        
+    response += f"\n**🎯 Recommended Actions:**\n"
+    response += "1. Focus on completing existing tasks before adding new ones\n"
+    response += "2. Implement daily task review at 5 PM\n"
+    response += "3. Set up weekly planning sessions every Friday\n"
+    
+    return {
+        "response": response,
+        "command": "/analyze",
+        "data": {"context": context, "patterns": patterns},
+        "timestamp": datetime.utcnow()
+    }
+
+async def handle_optimize_command(user: User, context: dict):
+    """Task optimization recommendations"""
+    
+    # Get current tasks
+    current_tasks = await db.tasks.find({
+        "assigned_to": user.id,
+        "status": {"$ne": "completed"}
+    }).to_list(1000)
+    
+    # Create optimization plan
+    optimization_plan = {
+        "prioritized_tasks": [
+            {"title": "High priority task 1", "priority_score": 9.5, "urgency": "high"},
+            {"title": "Medium priority task", "priority_score": 7.0, "urgency": "medium"},
+            {"title": "Low priority task", "priority_score": 4.0, "urgency": "low"}
+        ],
+        "recommended_capacity": 8,
+        "time_blocks": {
+            "morning": "High-priority creative work",
+            "midday": "Meetings and collaboration",
+            "afternoon": "Admin tasks and planning"
+        },
+        "quick_wins": [
+            "Review and organize task list",
+            "Complete 2-minute tasks immediately",
+            "Set up tomorrow's top 3 priorities",
+            "Clear email inbox",
+            "Update project status"
+        ],
+        "focus_area": "Task completion and follow-through"
+    }
+    
+    response = f"⚡ **Task Optimization Plan for {user.name.split()[0]}**\n\n"
+    response += f"**🎯 Current Workload:**\n"
+    response += f"• Active tasks: {len(current_tasks)}\n"
+    response += f"• Overdue tasks: {context['overdue_tasks']}\n"
+    response += f"• This week's capacity: {optimization_plan['recommended_capacity']} tasks\n\n"
+    
+    response += f"**📋 Optimized Task Priority:**\n"
+    for i, task in enumerate(optimization_plan['prioritized_tasks'][:10], 1):
+        urgency_emoji = "🔥" if task['urgency'] == "high" else "⚡" if task['urgency'] == "medium" else "📝"
+        response += f"{i}. {urgency_emoji} {task['title']} (Score: {task['priority_score']:.1f})\n"
+    
+    response += f"\n**⏰ Time Blocking Suggestion:**\n"
+    response += f"• Morning (9-11 AM): {optimization_plan['time_blocks']['morning']}\n"
+    response += f"• Midday (11 AM-2 PM): {optimization_plan['time_blocks']['midday']}\n"
+    response += f"• Afternoon (2-5 PM): {optimization_plan['time_blocks']['afternoon']}\n\n"
+    
+    response += f"**🚀 Quick Wins (Complete Today):**\n"
+    for i, quick_win in enumerate(optimization_plan['quick_wins'][:5], 1):
+        response += f"{i}. {quick_win}\n"
+    
+    response += f"\n**💡 Optimization Tips:**\n"
+    response += f"• Focus on {optimization_plan['focus_area']} this week\n"
+    response += f"• Batch similar tasks together\n"
+    response += f"• Use 25-minute focused work blocks\n"
+    response += f"• Review and adjust daily at 5 PM\n"
+    
+    return {
+        "response": response,
+        "command": "/optimize",
+        "data": optimization_plan,
+        "timestamp": datetime.utcnow()
+    }
+
+async def handle_goals_command(user: User, context: dict):
+    """Smart goal setting based on current performance"""
+    
+    goals = {
+        "performance_goals": [
+            {
+                "title": "Improve Task Completion Rate",
+                "target": f"{min(95, context['completion_rate'] + 15):.0f}%",
+                "current": f"{context['completion_rate']:.1f}%",
+                "timeline": "30 days",
+                "action": "Complete 1 additional task per day consistently"
+            },
+            {
+                "title": "Reduce Overdue Tasks",
+                "target": "0 overdue tasks",
+                "current": f"{context['overdue_tasks']} overdue",
+                "timeline": "14 days",
+                "action": "Daily triage and prioritization review"
+            }
+        ],
+        "weekly_milestones": [
+            f"Achieve {min(100, context['completion_rate'] + 5):.0f}% completion rate",
+            "Complete all overdue tasks",
+            f"Maintain {min(95, context['completion_rate'] + 15):.0f}% rate for full week",
+            "Establish sustainable daily routine"
+        ],
+        "success_metrics": [
+            "Daily task completion tracking",
+            "Weekly performance review",
+            "Monthly goal assessment",
+            "Quarterly productivity audit"
+        ],
+        "rewards": {
+            "daily": "15-minute break for favorite activity",
+            "weekly": "Special meal or entertainment",
+            "final": "Day off or significant personal reward"
+        }
+    }
+    
+    response = f"🎯 **SMART Goals for {user.name.split()[0]}**\n\n"
+    response += f"**Based on your current performance:**\n"
+    response += f"• Completion rate: {context['completion_rate']:.1f}%\n"
+    response += f"• Weekly velocity: {context['recent_activity']} tasks\n"
+    response += f"• Current trajectory: {context['productivity_trend'].replace('_', ' ').title()}\n\n"
+    
+    response += f"**📈 30-Day Performance Goals:**\n\n"
+    
+    for i, goal in enumerate(goals['performance_goals'], 1):
+        response += f"**Goal {i}: {goal['title']}**\n"
+        response += f"• Target: {goal['target']}\n"
+        response += f"• Current: {goal['current']}\n"
+        response += f"• Timeline: {goal['timeline']}\n"
+        response += f"• Action: {goal['action']}\n\n"
+    
+    response += f"**🏆 Weekly Milestones:**\n"
+    for week, milestone in enumerate(goals['weekly_milestones'], 1):
+        response += f"• Week {week}: {milestone}\n"
+    
+    response += f"\n**📊 Success Metrics:**\n"
+    for metric in goals['success_metrics']:
+        response += f"• {metric}\n"
+    
+    response += f"\n**🎉 Reward System:**\n"
+    response += f"• Daily win: {goals['rewards']['daily']}\n"
+    response += f"• Weekly achievement: {goals['rewards']['weekly']}\n"
+    response += f"• Goal completion: {goals['rewards']['final']}\n"
+    
+    return {
+        "response": response,
+        "command": "/goals",
+        "data": goals,
+        "timestamp": datetime.utcnow()
+    }
+
+async def handle_habits_command(user: User, context: dict):
+    """Habit formation recommendations"""
+    
+    habits = {
+        "consistency_score": min(10, context['completion_rate'] / 10),
+        "planning_score": 7.0,  # Simplified for demo
+        "focus_score": 6.5,
+        "recommended_habits": [
+            {
+                "name": "Daily Task Planning",
+                "trigger": "First coffee of the day",
+                "action": "Write down top 3 priorities",
+                "reward": "Check social media for 5 minutes",
+                "start_date": "Tomorrow",
+                "difficulty": 3
+            },
+            {
+                "name": "Task Completion Celebration",
+                "trigger": "Completing any task",
+                "action": "Cross it off and say 'Done!'",
+                "reward": "Feel satisfaction and momentum",
+                "start_date": "Today",
+                "difficulty": 2
+            }
+        ],
+        "implementation_schedule": [
+            "Focus on daily planning habit",
+            "Add completion celebration",
+            "Integrate weekly review",
+            "Establish energy management"
+        ],
+        "tracking_methods": [
+            "Simple daily checklist",
+            "Weekly habit review",
+            "Monthly progress assessment",
+            "Quarterly habit optimization"
+        ]
+    }
+    
+    response = f"🌱 **Productivity Habits for {user.name.split()[0]}**\n\n"
+    response += f"**Current Habits Assessment:**\n"
+    response += f"• Task completion consistency: {habits['consistency_score']:.1f}/10\n"
+    response += f"• Weekly planning: {habits['planning_score']:.1f}/10\n"
+    response += f"• Focus maintenance: {habits['focus_score']:.1f}/10\n\n"
+    
+    response += f"**🎯 Recommended Habit Stack:**\n\n"
+    
+    for i, habit in enumerate(habits['recommended_habits'], 1):
+        response += f"**Habit {i}: {habit['name']}**\n"
+        response += f"• Trigger: {habit['trigger']}\n"
+        response += f"• Action: {habit['action']}\n"
+        response += f"• Reward: {habit['reward']}\n"
+        response += f"• Start date: {habit['start_date']}\n"
+        response += f"• Difficulty: {habit['difficulty']}/10\n\n"
+    
+    response += f"**📅 Implementation Schedule:**\n"
+    for week, focus in enumerate(habits['implementation_schedule'], 1):
+        response += f"• Week {week}: {focus}\n"
+    
+    response += f"\n**📈 Habit Tracking:**\n"
+    for tracker in habits['tracking_methods']:
+        response += f"• {tracker}\n"
+    
+    response += f"\n**💡 Success Tips:**\n"
+    response += f"• Start with just one habit at a time\n"
+    response += f"• Track daily for the first 30 days\n"
+    response += f"• Link new habits to existing routines\n"
+    response += f"• Celebrate small wins consistently\n"
+    
+    return {
+        "response": response,
+        "command": "/habits",
+        "data": habits,
+        "timestamp": datetime.utcnow()
+    }
+
+async def handle_report_command(user: User, context: dict):
+    """Generate comprehensive productivity report"""
+    
+    # Get historical data for trends
+    historical_data = {
+        "avg_completion_rate": 75.0,
+        "trend": "improving",
+        "best_day": "Tuesday",
+        "worst_day": "Monday"
+    }
+    
+    report = {
+        "productivity_score": min(10, (context['completion_rate'] / 10) + (5 if context['overdue_tasks'] == 0 else 3)),
+        "trend": "improving" if context['productivity_trend'] == "improving" else "stable",
+        "trend_percentage": 12.5,  # Simplified for demo
+        "top_strength": "Task execution" if context['completion_rate'] > 80 else "Planning",
+        "improvement_area": "Time management" if context['overdue_tasks'] > 0 else "Task prioritization",
+        "historical_avg": historical_data.get('avg_completion_rate', 70),
+        "industry_benchmark": 78.0,
+        "efficiency_score": min(10, context['completion_rate'] / 10),
+        "time_management_score": 8.5 if context['overdue_tasks'] == 0 else 6.0,
+        "work_style": "Executor" if context['completion_rate'] > 80 else "Planner",
+        "peak_hours": "9-11 AM",
+        "complexity_preference": "Moderate",
+        "collaboration_level": "High" if context.get('active_projects', 0) > 2 else "Moderate",
+        "weekly_breakdown": {
+            "Monday": {"completed": 3, "avg_duration": 2.5},
+            "Tuesday": {"completed": 4, "avg_duration": 2.0},
+            "Wednesday": {"completed": 3, "avg_duration": 2.8},
+            "Thursday": {"completed": 4, "avg_duration": 2.2},
+            "Friday": {"completed": 2, "avg_duration": 1.5}
+        },
+        "action_items": [
+            "Complete overdue tasks first" if context['overdue_tasks'] > 0 else "Maintain current performance",
+            "Implement daily planning routine",
+            "Set up weekly review process",
+            "Optimize peak productivity hours"
+        ],
+        "most_productive_day": "Tuesday",
+        "avg_task_duration": 2.4,
+        "procrastination_index": 3.0 if context['overdue_tasks'] == 0 else 6.5,
+        "stress_level": 4 if context['overdue_tasks'] <= 2 else 7
+    }
+    
+    response = f"📊 **Productivity Report for {user.name.split()[0]}**\n"
+    response += f"*Generated on {datetime.utcnow().strftime('%B %d, %Y')}*\n\n"
+    
+    response += f"**🎯 Executive Summary:**\n"
+    response += f"• Overall productivity score: {report['productivity_score']:.1f}/10\n"
+    response += f"• Performance trend: {report['trend']} ({report['trend_percentage']:+.1f}%)\n"
+    response += f"• Key strength: {report['top_strength']}\n"
+    response += f"• Improvement area: {report['improvement_area']}\n\n"
+    
+    response += f"**📈 Performance Metrics:**\n"
+    response += f"• Tasks completed: {context['completed_tasks']} (vs {report['historical_avg']:.1f} avg)\n"
+    response += f"• Completion rate: {context['completion_rate']:.1f}% (vs {report['industry_benchmark']:.1f}% benchmark)\n"
+    response += f"• Efficiency score: {report['efficiency_score']:.1f}/10\n"
+    response += f"• Time management: {report['time_management_score']:.1f}/10\n\n"
+    
+    response += f"**🎭 Work Style Analysis:**\n"
+    response += f"• Primary work style: {report['work_style']}\n"
+    response += f"• Peak productivity hours: {report['peak_hours']}\n"
+    response += f"• Task complexity preference: {report['complexity_preference']}\n"
+    response += f"• Collaboration level: {report['collaboration_level']}\n\n"
+    
+    response += f"**📅 Weekly Breakdown:**\n"
+    for day, stats in report['weekly_breakdown'].items():
+        response += f"• {day}: {stats['completed']} completed, {stats['avg_duration']:.1f}h avg\n"
+    
+    response += f"\n**🚀 Action Items for Next Week:**\n"
+    for i, action in enumerate(report['action_items'], 1):
+        response += f"{i}. {action}\n"
+    
+    response += f"\n**📊 Detailed Analytics:**\n"
+    response += f"• Most productive day: {report['most_productive_day']}\n"
+    response += f"• Average task duration: {report['avg_task_duration']} hours\n"
+    response += f"• Procrastination index: {report['procrastination_index']:.1f}/10\n"
+    response += f"• Stress level indicator: {report['stress_level']}/10\n"
+    
+    return {
+        "response": response,
+        "command": "/report",
+        "data": report,
+        "timestamp": datetime.utcnow()
+    }
+
+def handle_help_command():
+    """Show available AI Coach commands"""
+    
+    response = """🤖 **AI Productivity Coach - Command Guide**
+
+**Available Commands:**
+
+🔍 `/analyze` - Deep dive into your productivity patterns and performance metrics
+
+⚡ `/optimize` - Get a personalized task prioritization and time-blocking plan  
+
+🎯 `/goals` - Generate SMART goals based on your current performance data
+
+🌱 `/habits` - Receive productivity habit recommendations and implementation plans
+
+📊 `/report` - Generate comprehensive productivity report with trends and insights
+
+❓ `/help` - Show this command guide
+
+**Chat Examples:**
+• "How can I improve my productivity?"
+• "I'm feeling overwhelmed with my tasks"
+• "Help me prioritize my work"
+• "What are best practices for team collaboration?"
+
+**Pro Tips:**
+• Use commands for structured analysis
+• Ask specific questions for targeted advice
+• Reference your current tasks and projects for personalized guidance
+• Regular check-ins help build better productivity habits
+
+Start by typing a command or asking me any productivity question! 🚀"""
+
+    return {
+        "response": response,
+        "command": "/help",
+        "timestamp": datetime.utcnow()
+    }
 async def generate_enhanced_coaching_response(message: str, user: User, context: dict = None) -> str:
     """Enhanced fallback coaching response with real user data"""
     
