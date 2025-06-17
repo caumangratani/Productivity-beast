@@ -883,86 +883,248 @@ async def ai_chat(request: dict, current_user: User = Depends(get_current_user))
     message = request.get("message", "")
     ai_provider = request.get("provider", "openai")
     
-    # Get AI settings
+    # Get AI settings for the user's company
     ai_settings = await db.ai_settings.find_one({"company_id": current_user.company_id})
     
     try:
-        if ai_provider == "openai" and ai_settings and ai_settings.get("openai_api_key"):
+        # Enhanced AI response with user context
+        user_context = await get_user_context_for_ai(current_user.id)
+        ai_response = await generate_ai_coaching_response(
+            message, current_user, user_context, ai_provider, ai_settings
+        )
+        
+        return {
+            "response": ai_response,
+            "provider": ai_provider,
+            "timestamp": datetime.utcnow(),
+            "user_context_used": True
+        }
+        
+    except Exception as e:
+        logger.error(f"AI Chat error: {str(e)}")
+        # Enhanced fallback response
+        enhanced_response = await generate_enhanced_coaching_response(message, current_user)
+        return {
+            "response": enhanced_response,
+            "provider": "enhanced_fallback",
+            "timestamp": datetime.utcnow(),
+            "error": "AI provider unavailable, using enhanced coaching"
+        }
+
+async def get_user_context_for_ai(user_id: str) -> dict:
+    """Get comprehensive user context for AI coaching"""
+    
+    # Get user's tasks
+    tasks = await db.tasks.find({"assigned_to": user_id}).to_list(1000)
+    
+    # Get user's projects
+    projects = await db.projects.find({
+        "$or": [
+            {"owner_id": user_id},
+            {"team_members": user_id}
+        ]
+    }).to_list(100)
+    
+    # Calculate performance metrics
+    completed_tasks = [t for t in tasks if t.get("status") == "completed"]
+    overdue_tasks = [t for t in tasks if t.get("status") == "overdue"]
+    in_progress_tasks = [t for t in tasks if t.get("status") == "in_progress"]
+    
+    # Eisenhower matrix distribution
+    eisenhower_distribution = {}
+    for quadrant in ["do", "decide", "delegate", "delete"]:
+        eisenhower_distribution[quadrant] = len([t for t in tasks if t.get("eisenhower_quadrant") == quadrant])
+    
+    # Recent activity pattern
+    recent_tasks = [t for t in tasks if (datetime.utcnow() - t.get("created_at", datetime.utcnow())).days <= 7]
+    
+    return {
+        "total_tasks": len(tasks),
+        "completed_tasks": len(completed_tasks),
+        "overdue_tasks": len(overdue_tasks),
+        "in_progress_tasks": len(in_progress_tasks),
+        "active_projects": len([p for p in projects if p.get("status") == "active"]),
+        "completion_rate": (len(completed_tasks) / len(tasks) * 100) if tasks else 0,
+        "eisenhower_distribution": eisenhower_distribution,
+        "recent_activity": len(recent_tasks),
+        "productivity_trend": "improving" if len(completed_tasks) > len(overdue_tasks) else "needs_attention"
+    }
+
+async def generate_ai_coaching_response(message: str, user: User, context: dict, provider: str, ai_settings: dict) -> str:
+    """Generate AI coaching response using specified provider"""
+    
+    # Create comprehensive prompt with user context
+    system_prompt = f"""You are an expert productivity coach helping {user.name} optimize their work performance. 
+
+CURRENT USER CONTEXT:
+- Total tasks: {context['total_tasks']}
+- Completion rate: {context['completion_rate']:.1f}%
+- Overdue tasks: {context['overdue_tasks']}
+- Active projects: {context['active_projects']}
+- Recent activity: {context['recent_activity']} tasks this week
+- Productivity trend: {context['productivity_trend']}
+
+EISENHOWER MATRIX DISTRIBUTION:
+- Do First (Urgent & Important): {context['eisenhower_distribution'].get('do', 0)}
+- Schedule (Important, Not Urgent): {context['eisenhower_distribution'].get('decide', 0)}
+- Delegate (Urgent, Not Important): {context['eisenhower_distribution'].get('delegate', 0)}
+- Don't Do (Neither Urgent nor Important): {context['eisenhower_distribution'].get('delete', 0)}
+
+Provide personalized, actionable productivity coaching based on their actual data. Be specific, encouraging, and offer concrete next steps."""
+
+    user_prompt = f"User Question: {message}\n\nPlease provide coaching advice based on my current productivity metrics."
+
+    try:
+        if provider == "openai" and (ai_settings and ai_settings.get("openai_api_key") or os.environ.get('OPENAI_API_KEY')):
             # Use OpenAI
+            api_key = ai_settings.get("openai_api_key") if ai_settings else os.environ.get('OPENAI_API_KEY')
+            
             from openai import OpenAI
-            client = OpenAI(api_key=ai_settings["openai_api_key"])
+            client = OpenAI(api_key=api_key)
             
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
-                    {"role": "system", "content": "You are a productivity coach helping users optimize their work efficiency. Provide actionable, practical advice."},
-                    {"role": "user", "content": message}
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
                 ],
-                max_tokens=500,
+                max_tokens=1000,
                 temperature=0.7
             )
             
-            ai_response = response.choices[0].message.content
+            return response.choices[0].message.content
             
-        elif ai_provider == "claude" and ai_settings and ai_settings.get("claude_api_key"):
+        elif provider == "claude" and ai_settings and ai_settings.get("claude_api_key"):
             # Use Claude
             import anthropic
             client = anthropic.Anthropic(api_key=ai_settings["claude_api_key"])
             
             response = client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=500,
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
                 messages=[
-                    {"role": "user", "content": f"As a productivity coach, help me with: {message}"}
+                    {"role": "user", "content": f"{system_prompt}\n\n{user_prompt}"}
                 ]
             )
             
-            ai_response = response.content[0].text
+            return response.content[0].text
+            
+        elif provider == "gemini" and ai_settings and ai_settings.get("gemini_api_key"):
+            # Use Gemini
+            import google.generativeai as genai
+            genai.configure(api_key=ai_settings["gemini_api_key"])
+            model = genai.GenerativeModel('gemini-pro')
+            
+            response = model.generate_content(f"{system_prompt}\n\n{user_prompt}")
+            return response.text
             
         else:
-            # Use enhanced fallback response
-            ai_response = generate_enhanced_ai_response(message, current_user)
+            # Fallback to enhanced local coaching
+            return await generate_enhanced_coaching_response(message, user, context)
             
-        return {
-            "response": ai_response,
-            "provider": ai_provider,
-            "timestamp": datetime.utcnow()
-        }
-        
     except Exception as e:
-        # Fallback to enhanced response if AI fails
-        enhanced_response = generate_enhanced_ai_response(message, current_user)
-        return {
-            "response": enhanced_response + f"\n\n(Note: Using fallback AI - {str(e)[:50]}...)",
-            "provider": "fallback",
-            "timestamp": datetime.utcnow()
-        }
+        logger.error(f"AI provider {provider} failed: {str(e)}")
+        return await generate_enhanced_coaching_response(message, user, context)
 
-def generate_enhanced_ai_response(user_message: str, user: User) -> str:
-    """Enhanced AI response generation - placeholder for real AI integration"""
+async def generate_enhanced_coaching_response(message: str, user: User, context: dict = None) -> str:
+    """Enhanced fallback coaching response with real user data"""
     
-    lower_message = user_message.lower()
+    if context is None:
+        context = await get_user_context_for_ai(user.id)
+    
+    lower_message = message.lower()
     user_name = user.name.split()[0]  # First name
     
+    # Personalized greeting with data
     if any(word in lower_message for word in ['hello', 'hi', 'hey']):
-        return f"Hello {user_name}! 👋 I'm your AI Productivity Coach. I'm here to help you optimize your workflow, manage tasks more effectively, and boost your team's productivity. What would you like to focus on today?"
+        return f"Hello {user_name}! 👋 I'm your AI Productivity Coach. \n\nI can see you have {context['total_tasks']} tasks with a {context['completion_rate']:.1f}% completion rate. Let's work together to optimize your productivity! \n\nI can help you with:\n• Task prioritization and optimization\n• Time management strategies\n• Goal setting and achievement\n• Performance analysis\n• Habit formation\n\nWhat would you like to focus on today?"
     
+    # Data-driven overwhelm response
     if any(word in lower_message for word in ['stuck', 'overwhelmed', 'help']):
-        return f"I understand you're feeling stuck, {user_name}. Let me help you break through this! 💪\n\n**Here's my immediate action plan:**\n\n1. **Prioritize ruthlessly** - Use the Eisenhower Matrix to focus on what truly matters\n2. **Break it down** - Large tasks feel overwhelming; split them into 15-minute chunks\n3. **Start with momentum** - Pick the easiest task first to build confidence\n4. **Time-box everything** - Set a timer for focused work sessions\n\nWhich of these strategies feels most relevant to your current situation?"
+        insights = []
+        if context['overdue_tasks'] > 0:
+            insights.append(f"You have {context['overdue_tasks']} overdue tasks that need immediate attention")
+        if context['eisenhower_distribution'].get('do', 0) > context['total_tasks'] * 0.3:
+            insights.append("Too many urgent tasks - let's work on prevention strategies")
+        if context['completion_rate'] < 70:
+            insights.append("Your completion rate could be improved with better task breakdown")
+            
+        response = f"I understand you're feeling overwhelmed, {user_name}. Based on your data, here's my immediate action plan:\n\n"
+        
+        if insights:
+            response += "**Key Issues I Found:**\n"
+            for insight in insights:
+                response += f"• {insight}\n"
+            response += "\n"
+        
+        response += """**Immediate Relief Strategy:**
+1. **Focus on {do_tasks} urgent tasks first** - These need immediate attention
+2. **Break down large tasks** - Aim for 15-30 minute chunks
+3. **Use the 2-minute rule** - If it takes less than 2 minutes, do it now
+4. **Schedule {decide_tasks} important tasks** - Don't let them become urgent
+
+**Next Steps:**
+• Complete 1 overdue task right now
+• Block 25 minutes for focused work
+• Review and reschedule unrealistic deadlines
+
+Which of these strategies feels most helpful for your current situation?""".format(
+            do_tasks=context['eisenhower_distribution'].get('do', 0),
+            decide_tasks=context['eisenhower_distribution'].get('decide', 0)
+        )
+        
+        return response
     
+    # Performance optimization with real data
     if any(word in lower_message for word in ['productivity', 'improve', 'better', 'efficient']):
-        return f"Great question, {user_name}! Based on productivity research and best practices, here's your personalized improvement roadmap:\n\n**🎯 High-Impact Strategies:**\n\n• **Energy Management** - Schedule important tasks during your peak energy hours\n• **Batch Processing** - Group similar tasks together (emails, calls, planning)\n• **Two-Minute Rule** - If it takes less than 2 minutes, do it immediately\n• **Weekly Reviews** - Spend 30 minutes every Friday planning next week\n\n**📊 Measurement Tips:**\n• Track completion rates, not just hours worked\n• Monitor energy levels throughout the day\n• Celebrate small wins to maintain motivation\n\nWould you like me to analyze your current task patterns and suggest specific optimizations?"
+        performance_insights = []
+        
+        if context['completion_rate'] > 80:
+            performance_insights.append("Excellent completion rate! You're already performing well.")
+        elif context['completion_rate'] > 60:
+            performance_insights.append("Good completion rate with room for optimization.")
+        else:
+            performance_insights.append("Completion rate needs attention - let's focus on this first.")
+            
+        if context['eisenhower_distribution'].get('delete', 0) > 0:
+            performance_insights.append(f"You have {context['eisenhower_distribution']['delete']} low-priority tasks to eliminate.")
+            
+        response = f"Great question, {user_name}! Based on your productivity data analysis:\n\n"
+        response += "📊 **Your Current Performance:**\n"
+        for insight in performance_insights:
+            response += f"• {insight}\n"
+        response += f"\n🎯 **Personalized Optimization Plan:**\n\n"
+        
+        if context['completion_rate'] < 70:
+            response += "**1. Completion Rate Boost:**\n• Break tasks into smaller, specific actions\n• Set realistic daily task limits (3-5 important tasks)\n• Use time-blocking for focused work\n\n"
+        
+        if context['eisenhower_distribution'].get('do', 0) > context['total_tasks'] * 0.3:
+            response += "**2. Reduce Urgency Addiction:**\n• Schedule important tasks before they become urgent\n• Build buffer time into deadlines\n• Focus on prevention vs. firefighting\n\n"
+        
+        response += f"**3. Energy Management:**\n• Schedule demanding tasks during peak energy hours\n• Batch similar tasks together\n• Take breaks every 90 minutes\n\n**Next Action:** Would you like me to analyze your specific task patterns and suggest a custom daily routine?"
+        
+        return response
     
+    # Team performance insights
     if any(word in lower_message for word in ['team', 'collaboration', 'meeting']):
-        return f"Team productivity is crucial for success, {user_name}! Here's how to optimize team collaboration:\n\n**🤝 Team Optimization Framework:**\n\n1. **Clear Communication Protocols**\n   - Daily stand-ups (max 15 min)\n   - Async updates for non-urgent items\n   - Defined decision-making processes\n\n2. **Smart Meeting Management**\n   - Default to 25/50 minute meetings\n   - Always have a clear agenda\n   - End with action items and owners\n\n3. **Workload Balance**\n   - Regular check-ins on team capacity\n   - Cross-training to prevent bottlenecks\n   - Fair distribution of challenging tasks\n\nWhat specific team challenge would you like me to help address?"
+        return f"Team productivity insights for {user_name}:\n\n**🤝 Current Team Involvement:**\n• Active in {context['active_projects']} projects\n• Contributing to team success\n\n**📈 Team Optimization Strategies:**\n\n1. **Communication Excellence:**\n   - Async updates for non-urgent items\n   - Clear agenda for all meetings\n   - Document decisions and action items\n\n2. **Workload Distribution:**\n   - Regular capacity check-ins\n   - Cross-training to prevent bottlenecks\n   - Fair distribution of challenging work\n\n3. **Collaboration Tools:**\n   - Shared task visibility\n   - Clear ownership and deadlines\n   - Regular retrospectives\n\nWhich team challenge would you like specific help with?"
     
+    # Goal setting with data context
     if any(word in lower_message for word in ['goal', 'target', 'objective']):
-        return f"Goal setting is fundamental to productivity, {user_name}! Let me share the SMART+ framework:\n\n**🎯 SMART+ Goals Framework:**\n\n• **Specific** - Clear, well-defined outcomes\n• **Measurable** - Trackable metrics and milestones\n• **Achievable** - Realistic given current resources\n• **Relevant** - Aligned with bigger picture priorities\n• **Time-bound** - Clear deadlines and checkpoints\n• **+ Exciting** - Goals that motivate and inspire you\n\n**💡 Pro Implementation Tips:**\n- Break large goals into weekly mini-goals\n- Track leading indicators, not just results\n- Review and adjust monthly based on learnings\n- Celebrate progress milestones\n\nWhat specific goal would you like help structuring using this framework?"
+        return f"Goal setting guidance for {user_name} based on your current performance:\n\n**🎯 SMART+ Goals Framework:**\n\n**Current Baseline:**\n• Completion Rate: {context['completion_rate']:.1f}%\n• Weekly Activity: {context['recent_activity']} tasks\n• Active Projects: {context['active_projects']}\n\n**Recommended Goals:**\n• **Performance Goal:** Increase completion rate to {min(95, context['completion_rate'] + 15):.0f}% within 30 days\n• **Efficiency Goal:** Reduce overdue tasks from {context['overdue_tasks']} to 0 within 2 weeks\n• **Balance Goal:** Maintain 60% Important/Non-Urgent tasks in your matrix\n\n**Implementation Strategy:**\n✓ Weekly goal reviews every Friday\n✓ Track leading indicators (daily completed tasks)\n✓ Adjust targets based on realistic capacity\n✓ Celebrate milestone achievements\n\nWhich specific goal area would you like help structuring?"
     
+    # Stress and burnout with personalized data
     if any(word in lower_message for word in ['stress', 'burnout', 'tired', 'exhausted']):
-        return f"I hear you, {user_name}. Productivity isn't about working more - it's about working sustainably. 🌱\n\n**Immediate Stress Relief Plan:**\n\n1. **Take a break right now** - Even 5 minutes helps reset your mind\n2. **Audit your commitments** - What can you delegate, defer, or delete?\n3. **Protect your energy** - Say no to non-essential requests this week\n4. **Focus on recovery** - Prioritize sleep, nutrition, and movement\n\n**Long-term Prevention:**\n• Set realistic daily task limits (3-5 important tasks max)\n• Build buffer time into your schedule (25% extra)\n• Practice the 'good enough' principle for non-critical tasks\n• Regular check-ins with yourself about workload\n\nRemember: A rested, focused you is infinitely more productive than an exhausted, scattered you. What's one thing you can remove from your plate today?"
+        workload_analysis = "high" if context['total_tasks'] > 20 else "moderate" if context['total_tasks'] > 10 else "manageable"
+        
+        return f"I understand you're feeling overwhelmed, {user_name}. Let me help you regain balance. 🌱\n\n**📊 Workload Analysis:**\n• Current load: {workload_analysis} ({context['total_tasks']} tasks)\n• Overdue pressure: {context['overdue_tasks']} tasks behind\n• Recent activity: {context['recent_activity']} tasks this week\n\n**🚨 Immediate Relief Plan:**\n\n1. **Take a break right now** - Even 5 minutes helps reset your mind\n2. **Triage ruthlessly:**\n   - Focus only on {context['eisenhower_distribution'].get('do', 0)} urgent tasks today\n   - Defer {context['eisenhower_distribution'].get('decide', 0)} important tasks to tomorrow\n   - Delegate or delete {context['eisenhower_distribution'].get('delegate', 0) + context['eisenhower_distribution'].get('delete', 0)} lower-priority items\n\n3. **Capacity reset:**\n   - Limit yourself to 3 important tasks per day\n   - Build 25% buffer time into estimates\n   - Say no to new commitments this week\n\n**🛡️ Prevention Strategy:**\n• Weekly workload review (Fridays)\n• Daily energy check-ins\n• Proactive boundary setting\n\nWhat's the ONE thing you can remove from your plate today to reduce pressure?"
     
-    return f"That's an insightful point, {user_name}! Based on the latest productivity research and behavioral psychology, here's my perspective:\n\n**Key Principle: Sustainable High Performance**\n\nTrue productivity comes from:\n• **Clarity** - Knowing exactly what needs to be done\n• **Focus** - Single-tasking with deep attention\n• **Energy Management** - Working with your natural rhythms\n• **Continuous Improvement** - Small, consistent optimizations\n\n**Actionable Next Steps:**\n1. Identify your #1 priority for today\n2. Eliminate or minimize distractions for the next hour\n3. Work in focused 25-minute blocks with 5-minute breaks\n4. Track what works and iterate\n\nWhat specific productivity challenge can I help you tackle right now? I can analyze your current task patterns and suggest personalized improvements."
+    # Analysis and insights
+    if any(word in lower_message for word in ['analyze', 'analysis', 'insight', 'pattern']):
+        return f"📊 **Productivity Analysis for {user_name}**\n\n**Performance Snapshot:**\n• Overall completion rate: {context['completion_rate']:.1f}%\n• Task velocity: {context['recent_activity']} tasks/week\n• Project engagement: {context['active_projects']} active projects\n• Trend: {context['productivity_trend'].replace('_', ' ').title()}\n\n**🎯 Eisenhower Matrix Analysis:**\n• Do First: {context['eisenhower_distribution'].get('do', 0)} tasks ({context['eisenhower_distribution'].get('do', 0)/max(context['total_tasks'], 1)*100:.0f}%)\n• Schedule: {context['eisenhower_distribution'].get('decide', 0)} tasks ({context['eisenhower_distribution'].get('decide', 0)/max(context['total_tasks'], 1)*100:.0f}%)\n• Delegate: {context['eisenhower_distribution'].get('delegate', 0)} tasks ({context['eisenhower_distribution'].get('delegate', 0)/max(context['total_tasks'], 1)*100:.0f}%)\n• Eliminate: {context['eisenhower_distribution'].get('delete', 0)} tasks ({context['eisenhower_distribution'].get('delete', 0)/max(context['total_tasks'], 1)*100:.0f}%)\n\n**🔍 Key Insights:**\n• Optimal distribution: 20% Do, 60% Schedule, 15% Delegate, 5% Eliminate\n• Your pattern shows: {'Balanced approach' if context['eisenhower_distribution'].get('decide', 0) > context['eisenhower_distribution'].get('do', 0) else 'Too much urgency - focus on prevention'}\n\n**📈 Recommendations:**\n• {'Excellent balance! Maintain current approach.' if context['completion_rate'] > 80 else 'Focus on completing existing tasks before adding new ones.'}\n• {'Reduce urgent tasks by planning ahead' if context['eisenhower_distribution'].get('do', 0) > 5 else 'Good urgency management'}\n\nWould you like specific recommendations for any particular area?"
+    
+    # Default comprehensive response with data
+    return f"Thanks for reaching out, {user_name}! Based on your productivity data, here's my assessment:\n\n**📊 Current Status:**\n• {context['total_tasks']} total tasks with {context['completion_rate']:.1f}% completion rate\n• {context['overdue_tasks']} overdue tasks need attention\n• {context['active_projects']} active projects\n• Productivity trend: {context['productivity_trend'].replace('_', ' ')}\n\n**🎯 Key Productivity Principles:**\n• **Clarity** - Know exactly what needs to be done (Eisenhower Matrix)\n• **Focus** - Single-task with deep attention\n• **Energy Management** - Work with your natural rhythms\n• **Continuous Improvement** - Small, consistent optimizations\n\n**💡 Actionable Next Steps:**\n1. Complete {min(3, context['overdue_tasks'] or 1)} highest-priority tasks today\n2. Schedule important non-urgent work to prevent future urgency\n3. Work in focused 25-minute blocks with 5-minute breaks\n4. Track what works and iterate weekly\n\n**I can help you with:**\n• `/analyze` - Deep dive into your productivity patterns\n• `/optimize` - Custom task prioritization\n• `/goals` - SMART goal setting with your data\n• `/habits` - Build sustainable productivity habits\n\nWhat specific area would you like to focus on improving?"
 
 # WhatsApp Webhook endpoint
 @api_router.post("/integrations/whatsapp/webhook")
