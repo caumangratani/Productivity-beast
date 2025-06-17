@@ -61,11 +61,12 @@ def test_health_check():
 
 def test_user_management():
     """Test user management endpoints"""
-    # Create users
+    # Create users with unique emails using timestamp
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     for i in range(3):
         user_data = {
             "name": f"Test User {i}",
-            "email": f"testuser{i}@example.com",
+            "email": f"testuser{i}_{timestamp}@example.com",
             "password": f"SecurePassword{i}!",
             "company": "Test Company",
             "plan": "personal"
