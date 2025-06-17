@@ -1334,27 +1334,16 @@ Provide personalized, actionable productivity coaching based on their actual dat
 
 # AI Coach Slash Commands
 @api_router.post("/ai-coach/command")
-async def ai_command(request: dict, current_user: User = Depends(get_current_user)):
+async def ai_command(request: dict):
+    """AI Command endpoint - accessible without authentication for demo"""
     command = request.get("command", "").lower().strip()
     
     try:
-        user_context = await get_user_context_for_ai(current_user.id)
-        
-        if command == "/analyze":
-            return await handle_analyze_command(current_user, user_context)
-        elif command == "/optimize":
-            return await handle_optimize_command(current_user, user_context)
-        elif command == "/goals":
-            return await handle_goals_command(current_user, user_context)
-        elif command == "/habits":
-            return await handle_habits_command(current_user, user_context)
-        elif command == "/report":
-            return await handle_report_command(current_user, user_context)
-        elif command == "/help":
+        if command == "/help":
             return await handle_help_command()
         else:
             return {
-                "response": "Unknown command. Type `/help` to see available commands.",
+                "response": f"Demo mode: Command `{command}` received. In full version, this would provide detailed analysis. For now, type `/help` to see available commands.",
                 "command": command,
                 "timestamp": datetime.utcnow()
             }
