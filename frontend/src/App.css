@@ -410,6 +410,11 @@ body {
   color: #0369a1;
 }
 
+/* Team Management Specific Styles */
+.team-member-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .stats-card {
