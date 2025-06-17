@@ -1046,7 +1046,7 @@ async def ai_command(request: dict, current_user: User = Depends(get_current_use
         elif command == "/report":
             return await handle_report_command(current_user, user_context)
         elif command == "/help":
-            return handle_help_command()
+            return await handle_help_command()
         else:
             return {
                 "response": "Unknown command. Type `/help` to see available commands.",
