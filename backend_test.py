@@ -352,6 +352,47 @@ def test_sample_data_population():
     
     logger.info("Sample data population test passed")
 
+def test_auth_endpoints():
+    """Test authentication endpoints"""
+    # Test signup
+    signup_data = {
+        "name": "Auth Test User",
+        "email": "authtest@example.com",
+        "password": "SecureAuthPassword!",
+        "company": "Auth Test Company",
+        "plan": "personal"
+    }
+    
+    response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+    assert response.status_code == 200, f"Failed to signup: {response.text}"
+    signup_result = response.json()
+    assert signup_result["success"] == True
+    
+    # Test login
+    login_data = {
+        "email": "authtest@example.com",
+        "password": "SecureAuthPassword!"
+    }
+    
+    response = requests.post(f"{API_URL}/auth/login", json=login_data)
+    assert response.status_code == 200, f"Failed to login: {response.text}"
+    login_result = response.json()
+    assert "access_token" in login_result
+    assert "token_type" in login_result
+    assert "user" in login_result
+    assert login_result["token_type"] == "bearer"
+    
+    # Test auth/me endpoint with token
+    token = login_result["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    response = requests.get(f"{API_URL}/auth/me", headers=headers)
+    assert response.status_code == 200, f"Failed to get current user: {response.text}"
+    user_profile = response.json()
+    assert user_profile["email"] == signup_data["email"]
+    
+    logger.info("Authentication endpoints tests passed")
+
 if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
@@ -365,6 +406,7 @@ if __name__ == "__main__":
         test_ai_coach_insights()
         test_task_deletion()
         test_sample_data_population()
+        test_auth_endpoints()
         
         logger.info("All tests passed successfully!")
     except Exception as e:
