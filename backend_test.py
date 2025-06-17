@@ -337,6 +337,21 @@ def test_task_deletion():
     
     logger.info("Task deletion test passed")
 
+def test_sample_data_population():
+    """Test sample data population endpoint"""
+    response = requests.post(f"{API_URL}/populate-sample-data")
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert "users_created" in data
+    assert "projects_created" in data
+    assert "tasks_created" in data
+    assert data["users_created"] > 0
+    assert data["projects_created"] > 0
+    assert data["tasks_created"] > 0
+    
+    logger.info("Sample data population test passed")
+
 if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
@@ -349,6 +364,7 @@ if __name__ == "__main__":
         test_analytics_endpoints()
         test_ai_coach_insights()
         test_task_deletion()
+        test_sample_data_population()
         
         logger.info("All tests passed successfully!")
     except Exception as e:
