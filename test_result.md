@@ -243,15 +243,18 @@
 
   - task: "Team Project Manager with Kanban"
     implemented: true
-    working: false  # Needs testing
+    working: false
     file: "/app/frontend/src/components/ProjectManager.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
         - agent: "main"
         - comment: "Kanban-style project collaboration with three columns: To Do, In Progress, Completed"
+        - working: false
+        - agent: "testing"
+        - comment: "Unable to test the Team Project Manager functionality due to login issues. Could not access the project manager to verify Kanban-style project collaboration with the three columns."
 
   - task: "Team Performance Analytics"
     implemented: true
