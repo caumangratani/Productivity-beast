@@ -146,6 +146,8 @@ function App() {
         return <TeamPerformance users={users} />;
       case 'ai-coach':
         return <AICoach currentUser={user} />;
+      case 'whatsapp':
+        return <WhatsAppIntegration currentUser={user} />;
       case 'integrations':
         return <IntegrationSettings currentUser={user} />;
       case 'manual':
