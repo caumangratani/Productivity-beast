@@ -312,6 +312,18 @@
         - working: false
         - agent: "testing"
         - comment: "Unable to test the WhatsApp Integration functionality due to login issues. Could not access the WhatsApp Bot page to verify connection status, QR code generation, and the interface for WhatsApp setup. The code review shows that the WhatsApp Integration component is implemented with connection status display, QR code generation, and messaging features."
+        
+  - task: "Team Management"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/components/TeamManagement.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: false
+        - agent: "testing"
+        - comment: "Unable to test the Team Management functionality due to login issues. Could not access the Team Management page to verify team member list display, invitation process, and role-based access information. The code review shows that the Team Management component is implemented with team member list, invitation modal, and role-based access control information."
 
 ## metadata:
   created_by: "main_agent"
