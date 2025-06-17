@@ -1424,7 +1424,7 @@ async def handle_report_command(user: User, context: dict):
         "timestamp": datetime.utcnow()
     }
 
-def handle_help_command():
+async def handle_help_command():
     """Show available AI Coach commands"""
     
     response = """🤖 **AI Productivity Coach - Command Guide**
