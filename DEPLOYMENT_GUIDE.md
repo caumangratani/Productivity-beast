@@ -1,7 +1,7 @@
 # 🚀 PRODUCTIVITY BEAST - COMPLETE DEPLOYMENT GUIDE
 
 ## ✅ **LOGIN CREDENTIALS FOR TESTING**
-- **Website**: https://c1cd77dc-7125-41ef-a288-21e9290b3930.preview.emergentagent.com
+- **Website**: https://ee90ce40-e7e1-4fc3-b144-06755894b42a.preview.emergentagent.com
 - **Email**: demo@productivitybeast.com
 - **Password**: demo123
 
