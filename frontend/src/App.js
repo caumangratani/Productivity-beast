@@ -10,6 +10,7 @@ import TeamPerformance from "./components/TeamPerformance";
 import AICoach from "./components/AICoach";
 import IntegrationSettings from "./components/IntegrationSettings";
 import WhatsAppIntegration from "./components/WhatsAppIntegration";
+import TeamManagement from "./components/TeamManagement";
 import UserManual from "./components/UserManual";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
