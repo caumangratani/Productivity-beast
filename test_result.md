@@ -258,15 +258,18 @@
 
   - task: "Team Performance Analytics"
     implemented: true
-    working: false  # Needs testing
+    working: false
     file: "/app/frontend/src/components/TeamPerformance.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
         - agent: "main"
         - comment: "Performance tracking with 1-10 ratings, team ranking, and AI feedback generation"
+        - working: false
+        - agent: "testing"
+        - comment: "Unable to test the Team Performance Analytics functionality due to login issues. Could not access the team performance page to verify 1-10 ratings, team ranking, and AI feedback generation."
 
   - task: "AI Coach interface"
     implemented: true
