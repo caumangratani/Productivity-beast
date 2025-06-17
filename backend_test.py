@@ -355,10 +355,11 @@ def test_sample_data_population():
 
 def test_auth_endpoints():
     """Test authentication endpoints"""
-    # Test signup
+    # Test signup with unique email using timestamp
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     signup_data = {
         "name": "Auth Test User",
-        "email": "authtest@example.com",
+        "email": f"authtest_{timestamp}@example.com",
         "password": "SecureAuthPassword!",
         "company": "Auth Test Company",
         "plan": "personal"
@@ -371,8 +372,8 @@ def test_auth_endpoints():
     
     # Test login
     login_data = {
-        "email": "authtest@example.com",
-        "password": "SecureAuthPassword!"
+        "email": signup_data["email"],
+        "password": signup_data["password"]
     }
     
     response = requests.post(f"{API_URL}/auth/login", json=login_data)
