@@ -152,6 +152,283 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
+# WhatsApp Integration Endpoints
+@api_router.post("/whatsapp/message")
+async def handle_whatsapp_message(request: dict):
+    """Process incoming WhatsApp messages and generate responses"""
+    try:
+        phone_number = request.get("phone_number", "")
+        message_text = request.get("message", "").strip().lower()
+        message_id = request.get("message_id", "")
+        timestamp = request.get("timestamp", 0)
+
+        # Get or create user
+        user = await get_or_create_whatsapp_user(phone_number)
+
+        # Process command
+        response = await process_whatsapp_command(user, message_text)
+
+        return {"reply": response, "success": True}
+
+    except Exception as e:
+        logger.error(f"WhatsApp message processing error: {str(e)}")
+        return {
+            "reply": "❌ Sorry, I encountered an error processing your request. Please try again.",
+            "success": False
+        }
+
+async def get_or_create_whatsapp_user(phone_number: str):
+    """Get existing WhatsApp user or create new one"""
+    users_collection = db.users
+
+    user = await users_collection.find_one({"phone_number": phone_number})
+    if not user:
+        user_data = {
+            "id": str(uuid.uuid4()),
+            "name": f"WhatsApp User {phone_number[-4:]}",
+            "email": f"whatsapp_{phone_number}@productivity.app",
+            "phone_number": phone_number,
+            "role": "team_member",
+            "performance_score": 0.0,
+            "tasks_completed": 0,
+            "tasks_assigned": 0,
+            "tasks_overdue": 0,
+            "created_at": datetime.utcnow(),
+            "company_id": None
+        }
+        result = await users_collection.insert_one(user_data)
+        user_data["_id"] = result.inserted_id
+        return user_data
+
+    return user
+
+async def process_whatsapp_command(user, message_text: str) -> str:
+    """Process WhatsApp task-related commands"""
+
+    # Create task command: "create task: buy groceries"
+    if message_text.startswith("create task:") or message_text.startswith("add task:"):
+        task_description = message_text.replace("create task:", "").replace("add task:", "").strip()
+        if not task_description:
+            return "📝 Please provide a task description.\n\n*Example:* create task: buy groceries"
+
+        task_data = {
+            "id": str(uuid.uuid4()),
+            "title": task_description,
+            "description": "",
+            "assigned_to": user["id"],
+            "status": "todo",
+            "priority": "medium",
+            "eisenhower_quadrant": "decide",  # Default to important but not urgent
+            "created_at": datetime.utcnow(),
+            "tags": ["whatsapp"]
+        }
+
+        await db.tasks.insert_one(task_data)
+
+        # Update user task count
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$inc": {"tasks_assigned": 1}}
+        )
+
+        return f"✅ *Task Created Successfully!*\n\n📋 {task_description}\n\nUse *list tasks* to see all your tasks."
+
+    # List tasks command
+    elif message_text in ["list tasks", "show tasks", "my tasks", "tasks"]:
+        tasks = await db.tasks.find({
+            "assigned_to": user["id"],
+            "status": {"$ne": "completed"}
+        }).to_list(20)
+
+        if not tasks:
+            return "📝 *No pending tasks found.*\n\nCreate a task with: *create task: [description]*"
+
+        response = "📋 *Your Pending Tasks:*\n\n"
+        for i, task in enumerate(tasks, 1):
+            priority_emoji = {"urgent": "🔥", "high": "⚡", "medium": "📌", "low": "📝"}.get(task.get("priority", "medium"), "📝")
+            response += f"{i}. {priority_emoji} {task['title']}\n"
+
+        response += f"\n*Total: {len(tasks)} tasks*\n\nComplete with: *complete task [number]*"
+        return response
+
+    # Complete task command: "complete task 1"
+    elif message_text.startswith("complete task") or message_text.startswith("done task"):
+        try:
+            # Extract task number
+            words = message_text.split()
+            task_number = None
+            for word in words:
+                if word.isdigit():
+                    task_number = int(word)
+                    break
+            
+            if task_number is None:
+                return "📝 Please specify a task number.\n\n*Example:* complete task 1"
+
+            tasks = await db.tasks.find({
+                "assigned_to": user["id"],
+                "status": {"$ne": "completed"}
+            }).to_list(100)
+
+            if task_number < 1 or task_number > len(tasks):
+                return f"❌ Invalid task number. You have {len(tasks)} pending tasks.\n\nUse *list tasks* to see all tasks."
+
+            task_to_complete = tasks[task_number - 1]
+
+            await db.tasks.update_one(
+                {"id": task_to_complete["id"]},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "completed_at": datetime.utcnow()
+                    }
+                }
+            )
+
+            # Update user completed count
+            await db.users.update_one(
+                {"id": user["id"]},
+                {"$inc": {"tasks_completed": 1}}
+            )
+
+            return f"🎉 *Task Completed!*\n\n✅ {task_to_complete['title']}\n\nGreat job! Keep up the momentum!"
+
+        except Exception as e:
+            return "❌ Error completing task. Please check the task number and try again."
+
+    # Productivity stats
+    elif message_text in ["stats", "status", "performance", "dashboard"]:
+        user_tasks = await db.tasks.find({"assigned_to": user["id"]}).to_list(1000)
+        completed_tasks = [t for t in user_tasks if t.get("status") == "completed"]
+        pending_tasks = [t for t in user_tasks if t.get("status") != "completed"]
+        
+        completion_rate = (len(completed_tasks) / len(user_tasks) * 100) if user_tasks else 0
+        
+        response = f"📊 *Your Productivity Stats*\n\n"
+        response += f"📋 Total tasks: {len(user_tasks)}\n"
+        response += f"✅ Completed: {len(completed_tasks)}\n"
+        response += f"⏳ Pending: {len(pending_tasks)}\n"
+        response += f"📈 Completion rate: {completion_rate:.1f}%\n\n"
+        
+        if completion_rate > 80:
+            response += "🏆 Excellent performance! You're crushing it!"
+        elif completion_rate > 60:
+            response += "👍 Good work! Keep pushing forward!"
+        else:
+            response += "💪 Let's boost your productivity! Break tasks into smaller steps."
+            
+        return response
+
+    # AI coaching
+    elif message_text in ["coach", "help me", "advice", "tips"]:
+        return """🤖 *AI Productivity Coach*
+
+Here are some proven productivity tips:
+
+🎯 *Prioritization:*
+• Focus on 3 important tasks daily
+• Use urgency vs importance matrix
+• Tackle hardest tasks first
+
+⏰ *Time Management:*
+• Work in 25-minute focused blocks
+• Take 5-minute breaks between blocks
+• Plan your day the night before
+
+✅ *Task Management:*
+• Break large tasks into smaller steps
+• Set specific deadlines
+• Celebrate completed tasks
+
+Need personalized advice? Use the web app for detailed AI coaching!"""
+
+    # Help command
+    elif message_text in ["help", "commands", "?", "menu"]:
+        return """🤖 *Productivity Beast WhatsApp Bot*
+
+*📝 Task Commands:*
+• *create task: [description]* - Add new task
+• *list tasks* - Show pending tasks
+• *complete task [number]* - Mark as done
+
+*📊 Analytics:*
+• *stats* - View your performance
+• *coach* - Get productivity tips
+
+*Examples:*
+• create task: buy groceries
+• list tasks
+• complete task 1
+• stats
+
+Need advanced features? Visit the web app! 🚀"""
+
+    # Default response for unrecognized commands
+    else:
+        return f"""🤔 I didn't understand that command.
+
+*Quick Commands:*
+• create task: [description]
+• list tasks
+• complete task [number]
+• help
+
+*Example:* create task: finish project report
+
+Type *help* for all commands."""
+
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_status():
+    """Get WhatsApp service status"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:3001/status", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        return {
+            "connected": False,
+            "status": "service_unavailable",
+            "error": str(e)
+        }
+
+@api_router.get("/whatsapp/qr")
+async def get_whatsapp_qr():
+    """Get WhatsApp QR code for authentication"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:3001/qr", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        return {
+            "qr": None,
+            "status": "service_unavailable",
+            "error": str(e)
+        }
+
+@api_router.post("/whatsapp/send")
+async def send_whatsapp_message(request: dict):
+    """Send message via WhatsApp service"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://localhost:3001/send",
+                json=request,
+                timeout=10.0
+            )
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/restart")
+async def restart_whatsapp_service():
+    """Restart WhatsApp service connection"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://localhost:3001/restart", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Authentication Routes
 @api_router.post("/auth/signup")
 async def signup(signup_data: AuthSignup):
