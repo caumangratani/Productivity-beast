@@ -1538,32 +1538,44 @@ async def get_whatsapp_settings(current_user: User = Depends(get_current_user)):
         return settings
     return {"company_id": current_user.company_id, "enabled": False}
 
-# Enhanced AI Coach with real AI integration
+# Enhanced AI Coach with real AI integration and DATABASE ANALYSIS
 @api_router.post("/ai-coach/chat")
 async def ai_chat(request: dict):
-    """AI Chat endpoint - accessible without authentication for demo"""
+    """AI Chat endpoint with REAL DATA ANALYSIS from user's actual tasks and performance"""
     message = request.get("message", "")
     ai_provider = request.get("provider", "openai")
-    user_id = request.get("user_id", "demo_user")  # For demo purposes
+    user_id = request.get("user_id", "demo_user")
     
     try:
-        # For demo, use the global OpenAI key from environment
+        # Get REAL user data from the database
+        user_data = await get_comprehensive_user_analysis(user_id)
+        
+        # Use OpenAI with user's actual data
         openai_key = os.environ.get('OPENAI_API_KEY')
         
-        if ai_provider == "openai" and openai_key:
-            # Use OpenAI with environment key
+        if openai_key:
             from openai import OpenAI
             client = OpenAI(api_key=openai_key)
             
-            # Get user context if user_id provided
-            user_context = await get_user_context_for_ai(user_id) if user_id != "demo_user" else {}
-            
-            # Create system prompt with context
-            system_prompt = f"""You are an expert productivity coach. Provide helpful, actionable advice for improving productivity and task management.
+            # Create comprehensive system prompt with REAL USER DATA
+            system_prompt = f"""You are an expert productivity coach with access to the user's complete productivity database. 
 
-USER CONTEXT: {user_context if user_context else 'No specific user data available - provide general advice'}
+REAL USER DATA ANALYSIS:
+{user_data}
 
-Be encouraging, specific, and focus on practical tips."""
+You have access to their actual tasks, projects, performance metrics, team data, and productivity patterns. 
+Provide specific, data-driven insights based on their REAL information. 
+
+When they ask questions, reference their actual:
+- Task completion rates and patterns
+- Current projects and deadlines  
+- Team performance and collaboration
+- Eisenhower Matrix distribution
+- Recent productivity trends
+- Specific tasks they're working on
+- Actual performance scores and metrics
+
+Be specific and actionable, not generic. Use their real data to provide personalized coaching."""
 
             response = client.chat.completions.create(
                 model="gpt-4",
@@ -1578,26 +1590,244 @@ Be encouraging, specific, and focus on practical tips."""
             ai_response = response.choices[0].message.content
             
         else:
-            # Enhanced fallback response
-            ai_response = await generate_enhanced_coaching_response(message, None, {})
+            # Enhanced fallback with actual user data
+            ai_response = await generate_data_driven_response(message, user_data)
             
         return {
             "response": ai_response,
             "provider": ai_provider if openai_key else "enhanced_fallback",
             "timestamp": datetime.utcnow(),
-            "user_context_used": bool(user_id != "demo_user")
+            "user_context_used": True,
+            "data_points_analyzed": user_data.get("data_points_count", 0)
         }
         
     except Exception as e:
         logger.error(f"AI Chat error: {str(e)}")
-        # Enhanced fallback response
-        enhanced_response = await generate_enhanced_coaching_response(message, None, {})
         return {
-            "response": enhanced_response,
-            "provider": "enhanced_fallback",
+            "response": "I encountered an error analyzing your data. Please try again.",
+            "provider": "error",
             "timestamp": datetime.utcnow(),
-            "error": "AI provider unavailable, using enhanced coaching"
+            "error": str(e)
         }
+
+async def get_comprehensive_user_analysis(user_id: str):
+    """Get comprehensive analysis of user's actual data from database"""
+    try:
+        # Get user info
+        user = await db.users.find_one({"id": user_id}) if user_id != "demo_user" else None
+        
+        if not user:
+            # Use sample data for demo
+            user = await db.users.find_one({}) or {"id": "demo", "name": "Demo User"}
+            user_id = user.get("id", "demo")
+        
+        # Get actual tasks from database
+        tasks = await db.tasks.find({"assigned_to": user_id}).to_list(1000)
+        
+        # Get actual projects from database
+        projects = await db.projects.find({
+            "$or": [
+                {"owner_id": user_id},
+                {"team_members": user_id}
+            ]
+        }).to_list(100)
+        
+        # Calculate REAL performance metrics
+        completed_tasks = [t for t in tasks if t.get("status") == "completed"]
+        overdue_tasks = [t for t in tasks if t.get("status") == "overdue"]
+        in_progress_tasks = [t for t in tasks if t.get("status") == "in_progress"]
+        
+        # Calculate completion rate
+        completion_rate = (len(completed_tasks) / len(tasks) * 100) if tasks else 0
+        
+        # Analyze Eisenhower Matrix distribution
+        eisenhower_distribution = {}
+        for quadrant in ["do", "decide", "delegate", "delete"]:
+            eisenhower_distribution[quadrant] = len([t for t in tasks if t.get("eisenhower_quadrant") == quadrant])
+        
+        # Analyze recent activity patterns
+        recent_tasks = [t for t in tasks if (datetime.utcnow() - t.get("created_at", datetime.utcnow())).days <= 7]
+        
+        # Get team members for collaboration analysis
+        team_members = []
+        for project in projects:
+            team_members.extend(project.get("team_members", []))
+        unique_team_members = list(set(team_members))
+        
+        # Calculate productivity score
+        productivity_score = calculate_real_productivity_score(tasks, projects)
+        
+        # Recent task titles for specific analysis
+        recent_task_titles = [t.get("title", "") for t in recent_tasks[:5]]
+        urgent_task_titles = [t.get("title", "") for t in tasks if t.get("eisenhower_quadrant") == "do"][:3]
+        
+        # Time-based patterns
+        task_creation_by_day = {}
+        for task in tasks:
+            day = task.get("created_at", datetime.utcnow()).strftime("%A")
+            task_creation_by_day[day] = task_creation_by_day.get(day, 0) + 1
+        
+        most_productive_day = max(task_creation_by_day, key=task_creation_by_day.get) if task_creation_by_day else "Monday"
+        
+        # Project status analysis
+        active_projects = [p for p in projects if p.get("status") == "active"]
+        completed_projects = [p for p in projects if p.get("status") == "completed"]
+        
+        analysis = {
+            "user_name": user.get("name", "User"),
+            "user_role": user.get("role", "team_member"),
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "overdue_tasks": len(overdue_tasks),
+            "in_progress_tasks": len(in_progress_tasks),
+            "completion_rate": round(completion_rate, 1),
+            "productivity_score": productivity_score,
+            "eisenhower_distribution": eisenhower_distribution,
+            "recent_activity": len(recent_tasks),
+            "recent_task_titles": recent_task_titles,
+            "urgent_task_titles": urgent_task_titles,
+            "total_projects": len(projects),
+            "active_projects": len(active_projects),
+            "completed_projects": len(completed_projects),
+            "team_size": len(unique_team_members),
+            "most_productive_day": most_productive_day,
+            "task_creation_pattern": task_creation_by_day,
+            "data_points_count": len(tasks) + len(projects),
+            "last_task_created": tasks[-1].get("title", "") if tasks else "",
+            "performance_trend": "improving" if completion_rate > 70 else "needs_attention",
+            "focus_areas": identify_focus_areas(tasks, eisenhower_distribution),
+            "collaboration_level": "high" if len(unique_team_members) > 3 else "medium" if len(unique_team_members) > 1 else "solo",
+            "workload_balance": analyze_workload_balance(eisenhower_distribution),
+            "specific_recommendations": generate_specific_recommendations(tasks, projects, completion_rate)
+        }
+        
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"Error getting user analysis: {str(e)}")
+        return {"error": str(e), "data_points_count": 0}
+
+def calculate_real_productivity_score(tasks, projects):
+    """Calculate productivity score based on actual user data"""
+    if not tasks:
+        return 5.0
+    
+    completed_tasks = len([t for t in tasks if t.get("status") == "completed"])
+    total_tasks = len(tasks)
+    completion_rate = completed_tasks / total_tasks if total_tasks > 0 else 0
+    
+    # Factor in project completion
+    completed_projects = len([p for p in projects if p.get("status") == "completed"])
+    total_projects = len(projects) if projects else 1
+    project_completion_rate = completed_projects / total_projects
+    
+    # Calculate score (1-10)
+    score = (completion_rate * 6) + (project_completion_rate * 3) + 1
+    return min(10.0, max(1.0, score))
+
+def identify_focus_areas(tasks, eisenhower_distribution):
+    """Identify specific focus areas based on task distribution"""
+    focus_areas = []
+    
+    total_tasks = sum(eisenhower_distribution.values())
+    if total_tasks == 0:
+        return ["Create initial tasks and goals"]
+    
+    # Check for too many urgent tasks
+    urgent_percentage = (eisenhower_distribution.get("do", 0) / total_tasks) * 100
+    if urgent_percentage > 30:
+        focus_areas.append("Reduce urgent tasks through better planning")
+    
+    # Check for lack of important tasks
+    important_percentage = (eisenhower_distribution.get("decide", 0) / total_tasks) * 100
+    if important_percentage < 40:
+        focus_areas.append("Increase focus on important but not urgent tasks")
+    
+    # Check for delegation opportunities
+    delegate_percentage = (eisenhower_distribution.get("delegate", 0) / total_tasks) * 100
+    if delegate_percentage > 20:
+        focus_areas.append("Implement delegation strategies")
+    
+    # Check for elimination opportunities
+    delete_percentage = (eisenhower_distribution.get("delete", 0) / total_tasks) * 100
+    if delete_percentage > 10:
+        focus_areas.append("Eliminate low-value activities")
+    
+    if not focus_areas:
+        focus_areas.append("Maintain current balanced approach")
+    
+    return focus_areas
+
+def analyze_workload_balance(eisenhower_distribution):
+    """Analyze workload balance based on Eisenhower Matrix"""
+    total = sum(eisenhower_distribution.values())
+    if total == 0:
+        return "No tasks to analyze"
+    
+    do_percentage = (eisenhower_distribution.get("do", 0) / total) * 100
+    decide_percentage = (eisenhower_distribution.get("decide", 0) / total) * 100
+    
+    if do_percentage > 40:
+        return "Too much firefighting - focus on prevention"
+    elif decide_percentage > 60:
+        return "Excellent focus on important work"
+    elif do_percentage < 10 and decide_percentage > 50:
+        return "Great proactive approach"
+    else:
+        return "Balanced workload distribution"
+
+def generate_specific_recommendations(tasks, projects, completion_rate):
+    """Generate specific recommendations based on actual data"""
+    recommendations = []
+    
+    if completion_rate < 60:
+        recommendations.append("Break down large tasks into smaller 15-30 minute chunks")
+    
+    if len([t for t in tasks if t.get("status") == "overdue"]) > 0:
+        recommendations.append("Schedule daily 10-minute overdue task review")
+    
+    if len(projects) > 5:
+        recommendations.append("Consider consolidating or pausing some projects")
+    
+    recent_tasks = [t for t in tasks if (datetime.utcnow() - t.get("created_at", datetime.utcnow())).days <= 3]
+    if len(recent_tasks) > 10:
+        recommendations.append("Limit new task creation to 3 per day")
+    
+    if not recommendations:
+        recommendations.append("Continue current productive approach")
+    
+    return recommendations
+
+async def generate_data_driven_response(message: str, user_data: dict) -> str:
+    """Generate response using actual user data when AI is unavailable"""
+    lower_message = message.lower()
+    
+    # Use actual user data in responses
+    user_name = user_data.get("user_name", "User")
+    completion_rate = user_data.get("completion_rate", 0)
+    total_tasks = user_data.get("total_tasks", 0)
+    overdue_tasks = user_data.get("overdue_tasks", 0)
+    recent_tasks = user_data.get("recent_task_titles", [])
+    
+    if "performance" in lower_message or "how am i doing" in lower_message:
+        return f"""📊 **{user_name}'s Performance Analysis:**
+
+**Current Status:**
+• You have {total_tasks} total tasks with {completion_rate}% completion rate
+• {overdue_tasks} tasks are overdue and need immediate attention
+• Recent activity: {user_data.get('recent_activity', 0)} tasks this week
+
+**Your Recent Tasks:**
+{chr(10).join([f"• {task}" for task in recent_tasks[:3]])}
+
+**Focus Areas:**
+{chr(10).join([f"• {area}" for area in user_data.get('focus_areas', [])])}
+
+**Productivity Score:** {user_data.get('productivity_score', 5)}/10
+
+Based on your actual data, I recommend focusing on {"completing overdue tasks first" if overdue_tasks > 0 else "maintaining your current momentum"}."""
+    
+    return f"Based on your productivity data: {completion_rate}% completion rate, {total_tasks} tasks, I can provide specific insights. What would you like to know about your performance?"
 
 async def get_user_context_for_ai(user_id: str) -> dict:
     """Get comprehensive user context for AI coaching"""
