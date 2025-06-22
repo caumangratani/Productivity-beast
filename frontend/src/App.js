@@ -37,14 +37,16 @@ const Navigation = ({ activeSection, setActiveSection, onLogout, user }) => {
               </h1>
             </div>
             
-            <div className="flex space-x-1">
+            <div className="flex space-x-1 overflow-x-auto">
               {[
                 { key: 'dashboard', label: 'Dashboard', icon: '📊' },
                 { key: 'tasks', label: 'Personal Tasks', icon: '✅' },
                 { key: 'projects', label: 'Team Projects', icon: '📋' },
                 { key: 'performance', label: 'Team Performance', icon: '📈' },
                 { key: 'ai-coach', label: 'AI Coach', icon: '🤖' },
-                { key: 'auto-scheduler', label: 'Auto-Scheduler', icon: '🤖' },
+                { key: 'auto-scheduler', label: 'Auto-Scheduler', icon: '⏰' },
+                { key: 'okr', label: 'OKR Management', icon: '🎯' },
+                { key: 'analytics', label: 'Advanced Analytics', icon: '📊' },
                 { key: 'team', label: 'Team Management', icon: '👥' },
                 { key: 'whatsapp', label: 'WhatsApp Bot', icon: '📱' },
                 { key: 'integrations', label: 'Integrations', icon: '🔗' },
