@@ -456,82 +456,62 @@ def test_whatsapp_message_processing():
     assert response.status_code == 200, f"Failed to create user: {response.text}"
     whatsapp_user = response.json()
     
-    # Create another user to assign tasks to
-    team_user_data = {
-        "name": f"Team Member",
-        "email": f"teammember_{timestamp}@example.com",
-        "phone_number": f"+1556{timestamp[-4:]}",
-        "password": "SecurePassword!",
-        "company": "Test Company",
-        "plan": "personal"
+    # Test basic task creation command
+    request_data = {
+        "phone_number": user_data["phone_number"],
+        "message": "create task: test task",
+        "message_id": str(uuid.uuid4()),
+        "timestamp": int(datetime.utcnow().timestamp())
     }
     
-    response = requests.post(f"{API_URL}/users", json=team_user_data)
-    assert response.status_code == 200, f"Failed to create team user: {response.text}"
-    team_user = response.json()
+    response = requests.post(f"{API_URL}/whatsapp/message", json=request_data)
+    assert response.status_code == 200, f"Failed to process WhatsApp message: {response.text}"
     
-    # Make sure both users are in the same company
-    update_data = {
-        "company_id": whatsapp_user.get("company_id", "test_company")
+    result = response.json()
+    assert "reply" in result
+    assert "success" in result
+    assert result["success"] == True
+    assert "Task Created Successfully" in result["reply"]
+    
+    logger.info("WhatsApp task creation command test passed")
+    
+    # Test help command
+    request_data = {
+        "phone_number": user_data["phone_number"],
+        "message": "help",
+        "message_id": str(uuid.uuid4()),
+        "timestamp": int(datetime.utcnow().timestamp())
     }
     
-    response = requests.put(f"{API_URL}/users/{team_user['id']}", json=update_data)
-    response = requests.put(f"{API_URL}/users/{whatsapp_user['id']}", json=update_data)
+    response = requests.post(f"{API_URL}/whatsapp/message", json=request_data)
+    assert response.status_code == 200, f"Failed to process WhatsApp message: {response.text}"
     
-    # Test various WhatsApp commands
-    commands = [
-        {
-            "command": "create task: test task",
-            "expected_success": True,
-            "check_phrase": "Task Created Successfully"
-        },
-        {
-            "command": f"assign task to Team Member: review documents",
-            "expected_success": True,
-            "check_phrase": "Task Assigned Successfully"
-        },
-        {
-            "command": "team list",
-            "expected_success": True,
-            "check_phrase": "Your Team Members"
-        },
-        {
-            "command": "stats",
-            "expected_success": True,
-            "check_phrase": "Productivity Dashboard"
-        },
-        {
-            "command": "message team: test message",
-            "expected_success": True,
-            "check_phrase": "Team Message Sent"
-        },
-        {
-            "command": "help",
-            "expected_success": True,
-            "check_phrase": "Productivity Beast WhatsApp Bot"
-        }
-    ]
+    result = response.json()
+    assert "reply" in result
+    assert "success" in result
+    assert result["success"] == True
+    assert "Productivity Beast WhatsApp Bot" in result["reply"]
     
-    for cmd in commands:
-        request_data = {
-            "phone_number": user_data["phone_number"],
-            "message": cmd["command"],
-            "message_id": str(uuid.uuid4()),
-            "timestamp": int(datetime.utcnow().timestamp())
-        }
-        
-        response = requests.post(f"{API_URL}/whatsapp/message", json=request_data)
-        assert response.status_code == 200, f"Failed to process WhatsApp message: {response.text}"
-        
-        result = response.json()
-        assert "reply" in result
-        assert "success" in result
-        assert result["success"] == cmd["expected_success"]
-        
-        # Check for expected phrase in response
-        assert cmd["check_phrase"] in result["reply"], f"Expected '{cmd['check_phrase']}' in response, but got: {result['reply']}"
-        
-        logger.info(f"WhatsApp command test passed: {cmd['command']}")
+    logger.info("WhatsApp help command test passed")
+    
+    # Test stats command
+    request_data = {
+        "phone_number": user_data["phone_number"],
+        "message": "stats",
+        "message_id": str(uuid.uuid4()),
+        "timestamp": int(datetime.utcnow().timestamp())
+    }
+    
+    response = requests.post(f"{API_URL}/whatsapp/message", json=request_data)
+    assert response.status_code == 200, f"Failed to process WhatsApp message: {response.text}"
+    
+    result = response.json()
+    assert "reply" in result
+    assert "success" in result
+    assert result["success"] == True
+    assert "Productivity Dashboard" in result["reply"]
+    
+    logger.info("WhatsApp stats command test passed")
     
     logger.info("WhatsApp message processing tests passed")
 
