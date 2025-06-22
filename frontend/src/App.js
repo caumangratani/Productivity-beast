@@ -12,6 +12,8 @@ import IntegrationSettings from "./components/IntegrationSettings";
 import WhatsAppIntegration from "./components/WhatsAppIntegration";
 import TeamManagement from "./components/TeamManagement";
 import AutoScheduler from "./components/AutoScheduler";
+import OKRManagement from "./components/OKRManagement";
+import AdvancedAnalytics from "./components/AdvancedAnalytics";
 import UserManual from "./components/UserManual";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
