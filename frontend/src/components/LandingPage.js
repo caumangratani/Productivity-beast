@@ -206,6 +206,31 @@ const LandingPage = ({ onLogin }) => {
               >
                 Start Free Trial
               </button>
+              
+              {/* Quick Test Button */}
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Quick test login...');
+                    const response = await axios.post(`${API}/auth/login`, {
+                      email: 'test@example.com',
+                      password: 'testpass123'
+                    });
+                    console.log('✅ Test login successful:', response.data);
+                    if (response.data.access_token) {
+                      localStorage.setItem('token', response.data.access_token);
+                      localStorage.setItem('user', JSON.stringify(response.data.user));
+                      onLogin(response.data.user);
+                    }
+                  } catch (error) {
+                    console.error('❌ Test login failed:', error);
+                    alert('Test login failed: ' + (error.response?.data?.detail || error.message));
+                  }
+                }}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors text-sm"
+              >
+                🧪 Quick Test Login
+              </button>
             </div>
           </div>
         </div>
