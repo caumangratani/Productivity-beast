@@ -156,6 +156,10 @@ function App() {
         return <AICoach currentUser={user} />;
       case 'auto-scheduler':
         return <AutoScheduler currentUser={user} />;
+      case 'okr':
+        return <OKRManagement currentUser={user} />;
+      case 'analytics':
+        return <AdvancedAnalytics currentUser={user} />;
       case 'team':
         return <TeamManagement currentUser={user} />;
       case 'whatsapp':
