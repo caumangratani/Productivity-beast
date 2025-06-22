@@ -302,7 +302,277 @@ async def get_google_service(user_id: str, service_name: str):
         logger.error(f"Google service creation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/auto-scheduler/optimal-time")
+@api_router.post("/google/calendar/sync-tasks")
+async def sync_tasks_to_calendar(request: dict):
+    """Sync user tasks to Google Calendar"""
+    try:
+        user_id = request.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID required")
+        
+        # Get Google Calendar service
+        calendar_service = await get_google_service(user_id, "calendar")
+        
+        # Get user's tasks with due dates
+        tasks = await db.tasks.find({
+            "assigned_to": user_id,
+            "due_date": {"$exists": True, "$ne": None},
+            "status": {"$ne": "completed"}
+        }).to_list(100)
+        
+        synced_count = 0
+        errors = []
+        
+        for task in tasks:
+            try:
+                # Check if task already has calendar event
+                existing_event = await db.calendar_events.find_one({
+                    "task_id": task["id"],
+                    "user_id": user_id
+                })
+                
+                if existing_event:
+                    continue  # Skip if already synced
+                
+                # Create calendar event
+                due_date = task["due_date"]
+                if due_date.tzinfo is None:
+                    due_date = due_date.replace(tzinfo=None)
+                
+                # Set event duration based on priority
+                duration_hours = {
+                    "urgent": 2,
+                    "high": 1.5,
+                    "medium": 1,
+                    "low": 0.5
+                }.get(task.get("priority", "medium"), 1)
+                
+                event_start = due_date - timedelta(hours=duration_hours)
+                
+                event = {
+                    'summary': f"📋 {task['title']}",
+                    'description': f"""
+Productivity Beast Task
+
+📝 Description: {task.get('description', 'No description')}
+📊 Priority: {task.get('priority', 'medium').title()}
+🎯 Eisenhower Quadrant: {task.get('eisenhower_quadrant', 'decide').title()}
+🏷️ Tags: {', '.join(task.get('tags', []))}
+
+⚡ Auto-synced from Productivity Beast
+                    """.strip(),
+                    'start': {
+                        'dateTime': event_start.isoformat(),
+                        'timeZone': 'UTC',
+                    },
+                    'end': {
+                        'dateTime': due_date.isoformat(),
+                        'timeZone': 'UTC',
+                    },
+                    'colorId': {
+                        "urgent": "11",    # Red
+                        "high": "6",       # Orange  
+                        "medium": "2",     # Green
+                        "low": "8"         # Gray
+                    }.get(task.get("priority", "medium"), "2"),
+                    'reminders': {
+                        'useDefault': False,
+                        'overrides': [
+                            {'method': 'popup', 'minutes': 30},
+                            {'method': 'popup', 'minutes': 10},
+                        ],
+                    },
+                }
+                
+                # Create event in Google Calendar
+                created_event = calendar_service.events().insert(
+                    calendarId='primary',
+                    body=event
+                ).execute()
+                
+                # Store calendar event reference
+                await db.calendar_events.insert_one({
+                    "task_id": task["id"],
+                    "user_id": user_id,
+                    "calendar_event_id": created_event["id"],
+                    "calendar_link": created_event.get("htmlLink"),
+                    "created_at": datetime.utcnow()
+                })
+                
+                synced_count += 1
+                
+            except Exception as e:
+                errors.append(f"Task '{task['title']}': {str(e)}")
+        
+        return {
+            "success": True,
+            "synced_count": synced_count,
+            "total_tasks": len(tasks),
+            "errors": errors,
+            "message": f"Successfully synced {synced_count} tasks to Google Calendar"
+        }
+        
+    except Exception as e:
+        logger.error(f"Calendar sync error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/google/calendar/optimal-schedule")
+async def create_optimal_schedule(request: dict):
+    """Create optimal time blocks in Google Calendar based on task priorities"""
+    try:
+        user_id = request.get("user_id")
+        date_str = request.get("date")  # YYYY-MM-DD format
+        
+        if not user_id or not date_str:
+            raise HTTPException(status_code=400, detail="User ID and date required")
+        
+        # Parse target date
+        target_date = datetime.strptime(date_str, "%Y-%m-%d")
+        start_of_day = target_date.replace(hour=9, minute=0, second=0, microsecond=0)
+        end_of_day = target_date.replace(hour=17, minute=0, second=0, microsecond=0)
+        
+        # Get Google Calendar service
+        calendar_service = await get_google_service(user_id, "calendar")
+        
+        # Get existing events for the day to avoid conflicts
+        events_result = calendar_service.events().list(
+            calendarId='primary',
+            timeMin=start_of_day.isoformat() + 'Z',
+            timeMax=end_of_day.isoformat() + 'Z',
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        
+        existing_events = events_result.get('items', [])
+        
+        # Get user's pending tasks
+        tasks = await db.tasks.find({
+            "assigned_to": user_id,
+            "status": {"$in": ["todo", "in_progress"]},
+            "due_date": {"$gte": target_date}
+        }).sort([("priority", -1), ("due_date", 1)]).to_list(20)
+        
+        # Create optimal schedule
+        scheduled_blocks = []
+        current_time = start_of_day
+        
+        # Priority-based time allocation
+        priority_durations = {
+            "urgent": 90,    # 1.5 hours
+            "high": 60,      # 1 hour
+            "medium": 45,    # 45 minutes
+            "low": 30        # 30 minutes
+        }
+        
+        for task in tasks[:8]:  # Schedule max 8 tasks per day
+            try:
+                duration = priority_durations.get(task.get("priority", "medium"), 45)
+                
+                # Find next available time slot
+                while current_time + timedelta(minutes=duration) <= end_of_day:
+                    slot_end = current_time + timedelta(minutes=duration)
+                    
+                    # Check for conflicts with existing events
+                    conflict = False
+                    for event in existing_events:
+                        event_start = datetime.fromisoformat(event['start'].get('dateTime', event['start'].get('date')).replace('Z', '+00:00'))
+                        event_end = datetime.fromisoformat(event['end'].get('dateTime', event['end'].get('date')).replace('Z', '+00:00'))
+                        
+                        if (current_time < event_end and slot_end > event_start):
+                            conflict = True
+                            current_time = event_end
+                            break
+                    
+                    if not conflict:
+                        # Create time block event
+                        priority_emoji = {"urgent": "🔥", "high": "⚡", "medium": "📌", "low": "📝"}.get(task.get("priority", "medium"), "📌")
+                        
+                        event = {
+                            'summary': f"{priority_emoji} FOCUS: {task['title']}",
+                            'description': f"""
+🎯 Optimal Time Block - Productivity Beast
+
+📝 Task: {task['title']}
+📊 Priority: {task.get('priority', 'medium').title()}
+⏱️ Estimated Duration: {duration} minutes
+🧠 Optimal Time: Based on your productivity patterns
+
+💡 Tips for this session:
+• Eliminate distractions
+• Use Pomodoro technique (25min focus + 5min break)
+• Track your actual time spent
+
+⚡ Generated by Productivity Beast AI
+                            """.strip(),
+                            'start': {
+                                'dateTime': current_time.isoformat(),
+                                'timeZone': 'UTC',
+                            },
+                            'end': {
+                                'dateTime': slot_end.isoformat(),
+                                'timeZone': 'UTC',
+                            },
+                            'colorId': {
+                                "urgent": "11",    # Red
+                                "high": "6",       # Orange  
+                                "medium": "9",     # Blue
+                                "low": "8"         # Gray
+                            }.get(task.get("priority", "medium"), "9"),
+                            'reminders': {
+                                'useDefault': False,
+                                'overrides': [
+                                    {'method': 'popup', 'minutes': 15},
+                                    {'method': 'popup', 'minutes': 5},
+                                ],
+                            },
+                        }
+                        
+                        # Create event in Google Calendar
+                        created_event = calendar_service.events().insert(
+                            calendarId='primary',
+                            body=event
+                        ).execute()
+                        
+                        scheduled_blocks.append({
+                            "task_id": task["id"],
+                            "task_title": task["title"],
+                            "start_time": current_time.isoformat(),
+                            "end_time": slot_end.isoformat(),
+                            "duration_minutes": duration,
+                            "priority": task.get("priority", "medium"),
+                            "calendar_event_id": created_event["id"],
+                            "calendar_link": created_event.get("htmlLink")
+                        })
+                        
+                        # Move to next slot with 15-minute buffer
+                        current_time = slot_end + timedelta(minutes=15)
+                        break
+                    
+                else:
+                    # No more time available for the day
+                    break
+                    
+            except Exception as e:
+                logger.error(f"Error scheduling task {task['id']}: {str(e)}")
+                continue
+        
+        return {
+            "success": True,
+            "date": date_str,
+            "scheduled_blocks": len(scheduled_blocks),
+            "schedule": scheduled_blocks,
+            "message": f"Created {len(scheduled_blocks)} optimal time blocks for {date_str}",
+            "productivity_tips": [
+                "🎯 Focus on one task at a time during each block",
+                "⏰ Use the scheduled reminders to stay on track", 
+                "📱 Silence notifications during focus blocks",
+                "💪 Take breaks between blocks to maintain energy"
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Optimal scheduling error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 async def find_optimal_time(request: dict):
     """
     Auto-Scheduler: Find optimal time slots based on Eisenhower Matrix priority
