@@ -333,16 +333,9 @@
 
 ## test_plan:
   current_focus:
-    - "Main App component with navigation"
-    - "Dashboard with analytics"
-    - "Personal Task Manager"
-    - "Team Project Manager with Kanban"
-    - "Team Performance Analytics"
-    - "AI Coach interface"
-    - "CSS styling with design principles"
-    - "WhatsApp Integration"
-    - "Team Management"
+    - "Authentication"
   stuck_tasks:
+    - "Authentication"
     - "Main App component with navigation"
     - "Dashboard with analytics"
     - "Personal Task Manager"
@@ -351,7 +344,7 @@
     - "AI Coach interface"
     - "WhatsApp Integration"
     - "Team Management"
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 ## agent_communication:
