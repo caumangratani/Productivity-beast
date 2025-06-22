@@ -818,7 +818,7 @@ async def get_or_create_whatsapp_user(phone_number: str):
     return user
 
 async def process_whatsapp_command(user, message_text: str) -> str:
-    """Process WhatsApp task-related commands"""
+    """Process WhatsApp task-related commands with enhanced functionality"""
 
     # Create task command: "create task: buy groceries"
     if message_text.startswith("create task:") or message_text.startswith("add task:"):
@@ -848,7 +848,142 @@ async def process_whatsapp_command(user, message_text: str) -> str:
 
         return f"✅ *Task Created Successfully!*\n\n📋 {task_description}\n\nUse *list tasks* to see all your tasks."
 
-    # List tasks command
+    # Assign task to team member: "assign task to john: review documents"
+    elif message_text.startswith("assign task to "):
+        try:
+            # Parse the command: "assign task to [name]: [task description]"
+            command_parts = message_text.replace("assign task to ", "").split(":", 1)
+            if len(command_parts) != 2:
+                return "📝 Format: *assign task to [name]: [task description]*\n\n*Example:* assign task to john: review documents"
+            
+            assignee_name = command_parts[0].strip().lower()
+            task_description = command_parts[1].strip()
+            
+            # Parse due date and priority if mentioned
+            due_date = None
+            priority = "medium"
+            
+            if "due tomorrow" in task_description:
+                due_date = datetime.utcnow() + timedelta(days=1)
+                task_description = task_description.replace("due tomorrow", "").strip()
+                priority = "high"
+            elif "urgent" in task_description:
+                priority = "urgent"
+                task_description = task_description.replace("urgent", "").strip()
+            
+            # Find team member by name
+            team_member = await db.users.find_one({
+                "name": {"$regex": assignee_name, "$options": "i"},
+                "company_id": user.get("company_id")
+            })
+            
+            if not team_member:
+                return f"❌ Team member '{assignee_name}' not found.\n\nUse *team list* to see all team members."
+            
+            # Create task
+            task_data = {
+                "id": str(uuid.uuid4()),
+                "title": task_description,
+                "description": f"Assigned via WhatsApp by {user['name']}",
+                "assigned_to": team_member["id"],
+                "assigned_by": user["id"],
+                "status": "todo",
+                "priority": priority,
+                "eisenhower_quadrant": "decide",
+                "created_at": datetime.utcnow(),
+                "due_date": due_date,
+                "tags": ["whatsapp", "assigned"]
+            }
+            
+            await db.tasks.insert_one(task_data)
+            
+            # Update assignee task count
+            await db.users.update_one(
+                {"id": team_member["id"]},
+                {"$inc": {"tasks_assigned": 1}}
+            )
+            
+            # Send notification to assignee if they have WhatsApp
+            if team_member.get("phone_number"):
+                priority_emoji = {"urgent": "🔥", "high": "⚡", "medium": "📌", "low": "📝"}.get(priority, "📌")
+                due_text = f"\n📅 Due: {due_date.strftime('%Y-%m-%d')}" if due_date else ""
+                
+                notification = f"""📋 *New Task Assigned!*
+
+{priority_emoji} **{task_description}**
+
+👤 Assigned by: {user['name']}{due_text}
+
+Reply with *list tasks* to see all tasks"""
+                
+                try:
+                    async with httpx.AsyncClient() as client:
+                        await client.post(
+                            "http://localhost:3001/send",
+                            json={
+                                "phone_number": team_member["phone_number"],
+                                "message": notification
+                            },
+                            timeout=5.0
+                        )
+                except:
+                    pass  # Don't fail if notification sending fails
+            
+            due_date_str = due_date.strftime("%Y-%m-%d") if due_date else ""
+            due_text = f"\n📅 Due: {due_date_str}" if due_date else ""
+            return f"✅ *Task Assigned Successfully!*\n\n📋 {task_description}\n👤 Assigned to: {team_member['name']}\n📊 Priority: {priority.title()}{due_text}"
+            
+        except Exception as e:
+            return "❌ Error assigning task. Use format: *assign task to [name]: [description]*"
+
+    # List team members
+    elif message_text in ["team list", "show team", "list team", "team members"]:
+        team_members = await db.users.find({
+            "company_id": user.get("company_id"),
+            "id": {"$ne": user["id"]}  # Exclude current user
+        }).to_list(50)
+        
+        if not team_members:
+            return "👥 *No team members found.*\n\nInvite team members through the web app."
+        
+        response = "👥 *Your Team Members:*\n\n"
+        for i, member in enumerate(team_members, 1):
+            role_emoji = {"admin": "👑", "manager": "👨‍💼", "team_member": "👤"}.get(member.get("role", "team_member"), "👤")
+            whatsapp_status = "📱" if member.get("phone_number") else "❌"
+            response += f"{i}. {role_emoji} {member['name']} {whatsapp_status}\n"
+        
+        response += f"\n*Total: {len(team_members)} members*\n\n📱 = WhatsApp enabled\n❌ = No WhatsApp"
+        return response
+
+    # Send team message: "message team: Meeting in 10 minutes"
+    elif message_text.startswith("message team:") or message_text.startswith("broadcast:"):
+        message_content = message_text.replace("message team:", "").replace("broadcast:", "").strip()
+        if not message_content:
+            return "📝 Please provide a message.\n\n*Example:* message team: Meeting in 10 minutes"
+        
+        try:
+            # Send team message via API
+            async with httpx.AsyncClient() as client:
+                backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+                response = await client.post(
+                    f"{backend_url}/api/whatsapp/send-team-message",
+                    json={
+                        "sender_id": user["id"],
+                        "message": message_content
+                    },
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return f"📢 *Team Message Sent!*\n\n✅ Delivered to {result['sent_count']} members\n❌ Failed: {result['failed_count']}\n👥 Total team: {result['total_members']}"
+                else:
+                    return "❌ Failed to send team message. Please try again."
+                    
+        except Exception as e:
+            return "❌ Error sending team message. Please check your connection."
+
+    # List tasks command with enhanced filtering
     elif message_text in ["list tasks", "show tasks", "my tasks", "tasks"]:
         tasks = await db.tasks.find({
             "assigned_to": user["id"],
@@ -859,11 +994,42 @@ async def process_whatsapp_command(user, message_text: str) -> str:
             return "📝 *No pending tasks found.*\n\nCreate a task with: *create task: [description]*"
 
         response = "📋 *Your Pending Tasks:*\n\n"
-        for i, task in enumerate(tasks, 1):
-            priority_emoji = {"urgent": "🔥", "high": "⚡", "medium": "📌", "low": "📝"}.get(task.get("priority", "medium"), "📝")
-            response += f"{i}. {priority_emoji} {task['title']}\n"
-
-        response += f"\n*Total: {len(tasks)} tasks*\n\nComplete with: *complete task [number]*"
+        overdue_tasks = []
+        urgent_tasks = []
+        normal_tasks = []
+        
+        for task in tasks:
+            if task.get("due_date") and task["due_date"].replace(tzinfo=None) < datetime.utcnow():
+                overdue_tasks.append(task)
+            elif task.get("priority") in ["urgent", "high"]:
+                urgent_tasks.append(task)
+            else:
+                normal_tasks.append(task)
+        
+        task_counter = 1
+        
+        if overdue_tasks:
+            response += "🔥 *OVERDUE:*\n"
+            for task in overdue_tasks[:3]:
+                response += f"{task_counter}. 🔥 {task['title']}\n"
+                task_counter += 1
+            response += "\n"
+        
+        if urgent_tasks:
+            response += "⚡ *HIGH PRIORITY:*\n"
+            for task in urgent_tasks[:3]:
+                priority_emoji = {"urgent": "🔥", "high": "⚡"}.get(task.get("priority", "medium"), "⚡")
+                response += f"{task_counter}. {priority_emoji} {task['title']}\n"
+                task_counter += 1
+            response += "\n"
+        
+        if normal_tasks:
+            response += "📌 *NORMAL:*\n"
+            for task in normal_tasks[:5]:
+                response += f"{task_counter}. 📌 {task['title']}\n"
+                task_counter += 1
+        
+        response += f"\n*Total: {len(tasks)} pending tasks*\n\nComplete with: *complete task [number]*"
         return response
 
     # Complete task command: "complete task 1"
@@ -906,89 +1072,154 @@ async def process_whatsapp_command(user, message_text: str) -> str:
                 {"$inc": {"tasks_completed": 1}}
             )
 
+            # Notify assigner if task was assigned by someone else
+            if task_to_complete.get("assigned_by"):
+                assigner = await db.users.find_one({"id": task_to_complete["assigned_by"]})
+                if assigner and assigner.get("phone_number"):
+                    notification = f"✅ *Task Completed!*\n\n📋 {task_to_complete['title']}\n👤 Completed by: {user['name']}\n🎉 Great teamwork!"
+                    
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            await client.post(
+                                "http://localhost:3001/send",
+                                json={
+                                    "phone_number": assigner["phone_number"],
+                                    "message": notification
+                                },
+                                timeout=5.0
+                            )
+                    except:
+                        pass
+
             return f"🎉 *Task Completed!*\n\n✅ {task_to_complete['title']}\n\nGreat job! Keep up the momentum!"
 
         except Exception as e:
             return "❌ Error completing task. Please check the task number and try again."
 
-    # Productivity stats
+    # Enhanced productivity stats with trends
     elif message_text in ["stats", "status", "performance", "dashboard"]:
         user_tasks = await db.tasks.find({"assigned_to": user["id"]}).to_list(1000)
         completed_tasks = [t for t in user_tasks if t.get("status") == "completed"]
         pending_tasks = [t for t in user_tasks if t.get("status") != "completed"]
+        overdue_tasks = [t for t in pending_tasks if t.get("due_date") and t["due_date"].replace(tzinfo=None) < datetime.utcnow()]
         
         completion_rate = (len(completed_tasks) / len(user_tasks) * 100) if user_tasks else 0
         
-        response = f"📊 *Your Productivity Stats*\n\n"
+        # Weekly comparison
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        weekly_completed = [t for t in completed_tasks if t.get("completed_at") and t["completed_at"] >= week_ago]
+        
+        response = f"📊 *Your Productivity Dashboard*\n\n"
+        response += f"👤 {user['name']}\n"
+        response += f"📅 {datetime.utcnow().strftime('%Y-%m-%d')}\n\n"
+        response += f"📈 **Overall Stats:**\n"
         response += f"📋 Total tasks: {len(user_tasks)}\n"
         response += f"✅ Completed: {len(completed_tasks)}\n"
         response += f"⏳ Pending: {len(pending_tasks)}\n"
-        response += f"📈 Completion rate: {completion_rate:.1f}%\n\n"
+        response += f"🔥 Overdue: {len(overdue_tasks)}\n"
+        response += f"📊 Completion rate: {completion_rate:.1f}%\n\n"
+        
+        response += f"📅 **This Week:**\n"
+        response += f"✅ Completed: {len(weekly_completed)} tasks\n\n"
         
         if completion_rate > 80:
-            response += "🏆 Excellent performance! You're crushing it!"
+            response += "🏆 **Outstanding performance!** You're a productivity champion!"
         elif completion_rate > 60:
-            response += "👍 Good work! Keep pushing forward!"
+            response += "👍 **Good work!** You're on the right track!"
+        elif completion_rate > 40:
+            response += "📈 **Room for improvement!** Let's boost your productivity!"
         else:
-            response += "💪 Let's boost your productivity! Break tasks into smaller steps."
+            response += "💪 **Let's get organized!** Break tasks into smaller steps."
+            
+        if overdue_tasks:
+            response += f"\n\n⚠️ **Focus on {len(overdue_tasks)} overdue tasks first!**"
             
         return response
 
-    # AI coaching
-    elif message_text in ["coach", "help me", "advice", "tips"]:
-        return """🤖 *AI Productivity Coach*
+    # Enhanced AI coaching with personalized advice
+    elif message_text in ["coach", "help me", "advice", "tips", "coaching"]:
+        # Get user's actual performance data
+        user_tasks = await db.tasks.find({"assigned_to": user["id"]}).to_list(1000)
+        completed_tasks = [t for t in user_tasks if t.get("status") == "completed"]
+        overdue_tasks = [t for t in user_tasks if t.get("status") != "completed" and t.get("due_date") and t["due_date"].replace(tzinfo=None) < datetime.utcnow()]
+        
+        completion_rate = (len(completed_tasks) / len(user_tasks) * 100) if user_tasks else 0
+        
+        response = f"🤖 *AI Productivity Coach for {user['name']}*\n\n"
+        
+        # Personalized advice based on performance
+        if completion_rate > 80:
+            response += "🌟 **You're crushing it!** Here's how to maintain excellence:\n\n"
+            response += "🎯 **Advanced Tips:**\n"
+            response += "• Focus on high-impact tasks\n"
+            response += "• Delegate routine tasks to grow your team\n"
+            response += "• Set stretch goals for continuous growth\n"
+        elif completion_rate > 60:
+            response += "👍 **Good momentum!** Let's optimize further:\n\n"
+            response += "⚡ **Growth Tips:**\n"
+            response += "• Time-block your calendar for deep work\n"
+            response += "• Use the 2-minute rule for quick tasks\n"
+            response += "• Review and adjust priorities weekly\n"
+        else:
+            response += "💪 **Let's boost your productivity!** Start here:\n\n"
+            response += "🚀 **Foundation Tips:**\n"
+            response += "• Break large tasks into 25-minute chunks\n"
+            response += "• Complete your hardest task first\n"
+            response += "• Limit yourself to 3 key tasks per day\n"
+        
+        response += "\n📱 **WhatsApp Productivity:**\n"
+        response += "• Use *assign task* for team collaboration\n"
+        response += "• Check *stats* daily for motivation\n"
+        response += "• Use *message team* for quick updates\n\n"
+        
+        if overdue_tasks:
+            response += f"⚠️ **Priority Alert:** Focus on your {len(overdue_tasks)} overdue tasks first!\n\n"
+        
+        response += "Need deeper analysis? Use the web app for detailed insights!"
+        return response
 
-Here are some proven productivity tips:
-
-🎯 *Prioritization:*
-• Focus on 3 important tasks daily
-• Use urgency vs importance matrix
-• Tackle hardest tasks first
-
-⏰ *Time Management:*
-• Work in 25-minute focused blocks
-• Take 5-minute breaks between blocks
-• Plan your day the night before
-
-✅ *Task Management:*
-• Break large tasks into smaller steps
-• Set specific deadlines
-• Celebrate completed tasks
-
-Need personalized advice? Use the web app for detailed AI coaching!"""
-
-    # Help command
+    # Help command with enhanced features
     elif message_text in ["help", "commands", "?", "menu"]:
         return """🤖 *Productivity Beast WhatsApp Bot*
 
-*📝 Task Commands:*
+*📝 Personal Tasks:*
 • *create task: [description]* - Add new task
-• *list tasks* - Show pending tasks
+• *list tasks* - Show pending tasks  
 • *complete task [number]* - Mark as done
-
-*📊 Analytics:*
 • *stats* - View your performance
-• *coach* - Get productivity tips
 
-*Examples:*
-• create task: buy groceries
-• list tasks
-• complete task 1
-• stats
+*👥 Team Collaboration:*
+• *assign task to [name]: [description]* - Assign task
+• *team list* - Show team members
+• *message team: [message]* - Broadcast message
 
-Need advanced features? Visit the web app! 🚀"""
+*🤖 AI Coaching:*
+• *coach* - Get personalized productivity tips
+• *help* - Show this menu
+
+*📅 Advanced Examples:*
+• assign task to john: review documents due tomorrow
+• create task: urgent - fix website bug
+• message team: Weekly meeting at 3 PM
+
+Need more features? Visit the web app! 🚀"""
 
     # Default response for unrecognized commands
     else:
         return f"""🤔 I didn't understand that command.
 
 *Quick Commands:*
-• create task: [description]
-• list tasks
-• complete task [number]
-• help
+• *create task: [description]*
+• *assign task to [name]: [description]*
+• *list tasks*
+• *complete task [number]*
+• *stats*
+• *coach*
+• *help*
 
-*Example:* create task: finish project report
+*Team Commands:*
+• *team list*
+• *message team: [message]*
 
 Type *help* for all commands."""
 
