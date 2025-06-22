@@ -11,6 +11,9 @@ const WhatsAppIntegration = ({ currentUser }) => {
   const [connectionHistory, setConnectionHistory] = useState([]);
   const [testMessage, setTestMessage] = useState('');
   const [testPhone, setTestPhone] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(currentUser?.phone_number || '');
+  const [teamMessage, setTeamMessage] = useState('');
+  const [sendingTeamMessage, setSendingTeamMessage] = useState(false);
 
   useEffect(() => {
     checkWhatsAppStatus();
@@ -65,6 +68,115 @@ const WhatsAppIntegration = ({ currentUser }) => {
       setTimeout(checkWhatsAppStatus, 3000);
     } catch (error) {
       console.error('Error restarting WhatsApp:', error);
+    }
+    setLoading(false);
+  };
+
+  const updatePhoneNumber = async () => {
+    if (!phoneNumber.startsWith('+')) {
+      alert('Phone number must include country code (e.g., +1234567890)');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/users/${currentUser.id}/phone`, 
+        { phone_number: phoneNumber },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      alert('Phone number updated successfully!');
+      
+      setConnectionHistory(prev => [...prev, {
+        timestamp: new Date(),
+        action: 'phone_updated',
+        message: `Phone number updated to ${phoneNumber}`
+      }]);
+    } catch (error) {
+      console.error('Error updating phone number:', error);
+      alert('Failed to update phone number');
+    }
+    setLoading(false);
+  };
+
+  const sendTeamMessage = async () => {
+    if (!teamMessage.trim()) {
+      alert('Please enter a message to send');
+      return;
+    }
+
+    setSendingTeamMessage(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/whatsapp/send-team-message`, 
+        { 
+          sender_id: currentUser.id,
+          message: teamMessage
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setConnectionHistory(prev => [...prev, {
+          timestamp: new Date(),
+          action: 'team_message',
+          message: `Team message sent to ${response.data.sent_count} members`
+        }]);
+        setTeamMessage('');
+        alert(`Message sent to ${response.data.sent_count} team members!`);
+      } else {
+        alert('Failed to send team message');
+      }
+    } catch (error) {
+      console.error('Error sending team message:', error);
+      alert('Error sending team message');
+    }
+    setSendingTeamMessage(false);
+  };
+
+  const sendDailyReminders = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/whatsapp/send-daily-reminders`, {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setConnectionHistory(prev => [...prev, {
+          timestamp: new Date(),
+          action: 'daily_reminders',
+          message: `Daily reminders sent to ${response.data.sent_count} users`
+        }]);
+        alert(`Daily reminders sent to ${response.data.sent_count} users!`);
+      }
+    } catch (error) {
+      console.error('Error sending daily reminders:', error);
+      alert('Error sending daily reminders');
+    }
+    setLoading(false);
+  };
+
+  const sendWeeklyReports = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/whatsapp/send-weekly-reports`, {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setConnectionHistory(prev => [...prev, {
+          timestamp: new Date(),
+          action: 'weekly_reports',
+          message: `Weekly reports sent to ${response.data.sent_count} users`
+        }]);
+        alert(`Weekly reports sent to ${response.data.sent_count} users!`);
+      }
+    } catch (error) {
+      console.error('Error sending weekly reports:', error);
+      alert('Error sending weekly reports');
     }
     setLoading(false);
   };
@@ -126,7 +238,7 @@ const WhatsAppIntegration = ({ currentUser }) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">📱 WhatsApp Integration</h2>
-          <p className="text-gray-600 mt-1">Manage tasks and get productivity updates via WhatsApp</p>
+          <p className="text-gray-600 mt-1">Enhanced task management and team collaboration via WhatsApp</p>
         </div>
         <div className="flex space-x-3">
           <button
@@ -155,6 +267,31 @@ const WhatsAppIntegration = ({ currentUser }) => {
         </div>
       </div>
 
+      {/* Phone Number Setup */}
+      <div className="stats-card">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📞 Phone Number Setup</h3>
+        <div className="flex space-x-4 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Your WhatsApp Phone Number</label>
+            <input
+              type="text"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="e.g., +1234567890"
+              className="input-field"
+            />
+            <p className="text-xs text-gray-500 mt-1">Include country code (e.g., +1 for US, +91 for India)</p>
+          </div>
+          <button
+            onClick={updatePhoneNumber}
+            disabled={loading || !phoneNumber}
+            className="btn-primary"
+          >
+            Update Phone
+          </button>
+        </div>
+      </div>
+
       {/* Status Card */}
       <div className="stats-card">
         <div className="flex items-center justify-between mb-4">
@@ -173,7 +310,7 @@ const WhatsAppIntegration = ({ currentUser }) => {
               WhatsApp account: <strong>{whatsappStatus.user.name || whatsappStatus.user.id}</strong>
             </p>
             <p className="text-sm text-green-600 mt-1">
-              You can now send WhatsApp messages to manage your tasks!
+              Enhanced features are now available including team messaging and automated reports!
             </p>
           </div>
         )}
@@ -216,26 +353,101 @@ const WhatsAppIntegration = ({ currentUser }) => {
         </div>
       )}
 
-      {/* Features Overview */}
+      {/* Enhanced Features - Team Management */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Team Messaging */}
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📢 Team Messaging</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Broadcast Message to Team</label>
+              <textarea
+                value={teamMessage}
+                onChange={(e) => setTeamMessage(e.target.value)}
+                placeholder="Type your team message..."
+                className="textarea-field"
+                rows="3"
+                disabled={!whatsappStatus?.connected}
+              />
+            </div>
+            
+            <button
+              onClick={sendTeamMessage}
+              disabled={!whatsappStatus?.connected || sendingTeamMessage || !teamMessage.trim()}
+              className="btn-primary w-full"
+            >
+              {sendingTeamMessage ? (
+                <div className="loading-spinner"></div>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              )}
+              Send Team Message
+            </button>
+          </div>
+        </div>
+
+        {/* Automated Reports */}
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Automated Reports</h3>
+          <div className="space-y-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 text-sm mb-2">Daily Task Reminders</h4>
+              <p className="text-xs text-gray-600 mb-3">Send pending task reminders to all team members with WhatsApp</p>
+              <button
+                onClick={sendDailyReminders}
+                disabled={!whatsappStatus?.connected || loading}
+                className="btn-secondary w-full"
+              >
+                Send Daily Reminders
+              </button>
+            </div>
+            
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 text-sm mb-2">Weekly Performance Reports</h4>
+              <p className="text-xs text-gray-600 mb-3">Send weekly productivity summaries to all team members</p>
+              <button
+                onClick={sendWeeklyReports}
+                disabled={!whatsappStatus?.connected || loading}
+                className="btn-secondary w-full"
+              >
+                Send Weekly Reports
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Commands */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Available Commands */}
         <div className="stats-card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 WhatsApp Bot Commands</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 Enhanced WhatsApp Bot Commands</h3>
           <div className="space-y-3">
             <div className="p-3 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-900 text-sm">Task Management</h4>
+              <h4 className="font-medium text-gray-900 text-sm">Personal Task Management</h4>
               <div className="text-xs text-gray-600 mt-1 space-y-1">
                 <div><code>create task: [description]</code> - Add new task</div>
-                <div><code>list tasks</code> - Show pending tasks</div>
+                <div><code>list tasks</code> - Show pending tasks with priorities</div>
                 <div><code>complete task [number]</code> - Mark task as done</div>
+                <div><code>stats</code> - View detailed performance dashboard</div>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 text-sm">🆕 Team Collaboration</h4>
+              <div className="text-xs text-gray-600 mt-1 space-y-1">
+                <div><code>assign task to [name]: [description]</code> - Assign task to team member</div>
+                <div><code>team list</code> - Show all team members</div>
+                <div><code>message team: [message]</code> - Broadcast to team</div>
               </div>
             </div>
             
             <div className="p-3 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-900 text-sm">Analytics & Coaching</h4>
+              <h4 className="font-medium text-gray-900 text-sm">AI Coaching & Analytics</h4>
               <div className="text-xs text-gray-600 mt-1 space-y-1">
-                <div><code>stats</code> - View performance stats</div>
-                <div><code>coach</code> - Get productivity tips</div>
+                <div><code>coach</code> - Get personalized productivity tips</div>
                 <div><code>help</code> - Show all commands</div>
               </div>
             </div>
@@ -310,9 +522,9 @@ const WhatsAppIntegration = ({ currentUser }) => {
         </div>
       )}
 
-      {/* Features List */}
+      {/* Enhanced Features List */}
       <div className="stats-card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 WhatsApp Integration Features</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">🚀 Enhanced WhatsApp Features</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
@@ -322,8 +534,8 @@ const WhatsAppIntegration = ({ currentUser }) => {
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Task Management</h4>
-                <p className="text-sm text-gray-600">Create, list, and complete tasks via WhatsApp messages</p>
+                <h4 className="font-medium text-gray-900">Enhanced Task Management</h4>
+                <p className="text-sm text-gray-600">Create, assign, list, and complete tasks with priority sorting</p>
               </div>
             </div>
             
@@ -334,8 +546,8 @@ const WhatsAppIntegration = ({ currentUser }) => {
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Performance Tracking</h4>
-                <p className="text-sm text-gray-600">Get productivity stats and completion rates on demand</p>
+                <h4 className="font-medium text-gray-900">Team Collaboration</h4>
+                <p className="text-sm text-gray-600">Assign tasks to team members and broadcast messages</p>
               </div>
             </div>
             
@@ -346,46 +558,46 @@ const WhatsAppIntegration = ({ currentUser }) => {
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">AI Coaching</h4>
-                <p className="text-sm text-gray-600">Receive productivity tips and coaching advice</p>
+                <h4 className="font-medium text-gray-900">Smart Notifications</h4>
+                <p className="text-sm text-gray-600">Automatic notifications for task assignments and completions</p>
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Smart Reminders</h4>
-                <p className="text-sm text-gray-600 italic">Coming Soon - Automated task deadline reminders</p>
+                <h4 className="font-medium text-gray-900">Daily Task Reminders</h4>
+                <p className="text-sm text-gray-600">Automated morning reminders for pending and overdue tasks</p>
               </div>
             </div>
             
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Daily Reports</h4>
-                <p className="text-sm text-gray-600 italic">Coming Soon - Automated daily productivity summaries</p>
+                <h4 className="font-medium text-gray-900">Weekly Performance Reports</h4>
+                <p className="text-sm text-gray-600">Automated weekly productivity summaries and insights</p>
               </div>
             </div>
             
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 className="font-medium text-gray-900">Team Notifications</h4>
-                <p className="text-sm text-gray-600 italic">Coming Soon - Team task updates and collaboration</p>
+                <h4 className="font-medium text-gray-900">Advanced AI Coaching</h4>
+                <p className="text-sm text-gray-600">Personalized productivity tips based on real performance data</p>
               </div>
             </div>
           </div>
