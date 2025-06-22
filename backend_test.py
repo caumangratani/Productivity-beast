@@ -441,6 +441,43 @@ def test_ai_coach_chat():
 
 def test_whatsapp_message_processing():
     """Test WhatsApp message processing endpoint with enhanced commands"""
+    # Create a test user with phone number for WhatsApp
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    user_data = {
+        "name": f"WhatsApp Test User",
+        "email": f"whatsapp_{timestamp}@example.com",
+        "phone_number": f"+1555{timestamp[-4:]}",
+        "password": "SecurePassword!",
+        "company": "Test Company",
+        "plan": "personal"
+    }
+    
+    response = requests.post(f"{API_URL}/users", json=user_data)
+    assert response.status_code == 200, f"Failed to create user: {response.text}"
+    whatsapp_user = response.json()
+    
+    # Create another user to assign tasks to
+    team_user_data = {
+        "name": f"Team Member",
+        "email": f"teammember_{timestamp}@example.com",
+        "phone_number": f"+1556{timestamp[-4:]}",
+        "password": "SecurePassword!",
+        "company": "Test Company",
+        "plan": "personal"
+    }
+    
+    response = requests.post(f"{API_URL}/users", json=team_user_data)
+    assert response.status_code == 200, f"Failed to create team user: {response.text}"
+    team_user = response.json()
+    
+    # Make sure both users are in the same company
+    update_data = {
+        "company_id": whatsapp_user.get("company_id", "test_company")
+    }
+    
+    response = requests.put(f"{API_URL}/users/{team_user['id']}", json=update_data)
+    response = requests.put(f"{API_URL}/users/{whatsapp_user['id']}", json=update_data)
+    
     # Test various WhatsApp commands
     commands = [
         {
@@ -449,7 +486,7 @@ def test_whatsapp_message_processing():
             "check_phrase": "Task Created Successfully"
         },
         {
-            "command": "assign task to Test User 0: review documents",
+            "command": f"assign task to Team Member: review documents",
             "expected_success": True,
             "check_phrase": "Task Assigned Successfully"
         },
@@ -474,21 +511,6 @@ def test_whatsapp_message_processing():
             "check_phrase": "Productivity Beast WhatsApp Bot"
         }
     ]
-    
-    # Create a test user with phone number for WhatsApp
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    user_data = {
-        "name": f"WhatsApp Test User",
-        "email": f"whatsapp_{timestamp}@example.com",
-        "phone_number": f"+1555{timestamp[-4:]}",
-        "password": "SecurePassword!",
-        "company": "Test Company",
-        "plan": "personal"
-    }
-    
-    response = requests.post(f"{API_URL}/users", json=user_data)
-    assert response.status_code == 200, f"Failed to create user: {response.text}"
-    whatsapp_user = response.json()
     
     for cmd in commands:
         request_data = {
