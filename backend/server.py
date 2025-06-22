@@ -1999,3 +1999,47 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# Add test user endpoint
+@api_router.post("/create-test-user")
+async def create_test_user():
+    """Create a test user for development and testing"""
+    # Check if test user already exists
+    existing_user = await db.user_auth.find_one({"email": "test@example.com"})
+    if existing_user:
+        return {"message": "Test user already exists", "user_id": existing_user["id"]}
+    
+    # Create company
+    company = Company(
+        name="Test Company",
+        plan=PlanType.PERSONAL
+    )
+    await db.companies.insert_one(company.dict())
+    
+    # Create auth user
+    password_hash = get_password_hash("testpass123")
+    auth_user = UserAuth(
+        id="d7b55508-9237-4a09-9171-b213563bcd50",
+        email="test@example.com",
+        password_hash=password_hash,
+        is_active=True,
+        is_verified=True
+    )
+    await db.user_auth.insert_one(auth_user.dict())
+    
+    # Create user profile
+    user = User(
+        id=auth_user.id,
+        name="Test User",
+        email="test@example.com",
+        role=UserRole.ADMIN,
+        company_id=company.id
+    )
+    await db.users.insert_one(user.dict())
+    
+    return {
+        "message": "Test user created successfully",
+        "user_id": user.id,
+        "email": "test@example.com",
+        "password": "testpass123"
+    }
