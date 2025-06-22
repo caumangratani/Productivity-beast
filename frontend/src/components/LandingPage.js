@@ -120,20 +120,41 @@ const LandingPage = ({ onLogin }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      console.log('Attempting login with:', { email: formData.email, password: formData.password });
+      console.log('🔐 Login attempt started...');
+      console.log('Backend URL:', BACKEND_URL);
+      console.log('API endpoint:', `${API}/auth/login`);
+      console.log('Form data:', { email: formData.email, password: '***hidden***' });
+      
       const response = await axios.post(`${API}/auth/login`, {
         email: formData.email,
         password: formData.password
       });
-      console.log('Login response:', response.data);
+      
+      console.log('✅ Login successful:', response.data);
+      
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        setShowLogin(false);
         onLogin(response.data.user);
+      } else {
+        console.error('❌ No access token in response');
+        alert('Login failed: Invalid response format');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed: ' + (error.response?.data?.detail || error.message));
+      console.error('❌ Login error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      const errorMessage = error.response?.data?.detail || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Unknown error occurred';
+      
+      alert('Login failed: ' + errorMessage);
     }
   };
 
