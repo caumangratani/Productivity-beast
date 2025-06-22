@@ -85,44 +85,221 @@ def generate_productivity_report(context, historical, user):
 
 # Google Calendar & Sheets Integration Endpoints
 
-@api_router.get("/google/auth")
-async def google_auth(user_id: str = None):
-    """Initiate Google OAuth flow for Calendar and Sheets access"""
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
+import json
+
+# Google OAuth configuration
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = "https://project-continue-1.emergent.host/auth/google/callback"
+
+@api_router.get("/google/auth/url")
+async def get_google_auth_url(user_id: str):
+    """Get Google OAuth authorization URL for Calendar and Sheets access"""
     try:
-        # In production, you'd have a proper OAuth flow setup
-        # For demo purposes, we'll provide the setup instructions
+        if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+            raise HTTPException(status_code=500, detail="Google OAuth not configured")
         
-        auth_url = "https://accounts.google.com/o/oauth2/auth"
-        scopes = [
-            "https://www.googleapis.com/auth/calendar",
-            "https://www.googleapis.com/auth/spreadsheets"
-        ]
+        # Configure OAuth flow
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_REDIRECT_URI]
+                }
+            },
+            scopes=[
+                "https://www.googleapis.com/auth/calendar",
+                "https://www.googleapis.com/auth/spreadsheets",
+                "openid",
+                "email",
+                "profile"
+            ]
+        )
+        flow.redirect_uri = GOOGLE_REDIRECT_URI
         
-        setup_instructions = {
-            "status": "setup_required",
-            "message": "Google integration setup required",
-            "instructions": [
-                "1. Go to Google Cloud Console (https://console.cloud.google.com)",
-                "2. Create a new project or select existing one",
-                "3. Enable Google Calendar API and Google Sheets API",
-                "4. Create OAuth 2.0 credentials (Web Application type)",
-                "5. Add your domain to authorized redirect URIs",
-                "6. Add credentials to Integration Settings"
-            ],
-            "required_scopes": scopes,
-            "demo_features": [
-                "Auto-Scheduler - Optimal time-block scheduling",
-                "Meeting Intelligence - Extract meeting data and action items",
-                "Task deadline sync with Google Calendar",
-                "Automated productivity reports in Google Sheets",
-                "Eisenhower Matrix visualization in Sheets"
+        # Generate authorization URL
+        auth_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            state=user_id  # Pass user_id as state for callback
+        )
+        
+        return {
+            "auth_url": auth_url,
+            "state": state,
+            "message": "Visit the auth_url to authorize Google access"
+        }
+        
+    except Exception as e:
+        logger.error(f"Google auth URL generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/google/auth/callback")
+async def google_auth_callback(request: dict):
+    """Handle Google OAuth callback and store tokens"""
+    try:
+        code = request.get("code")
+        state = request.get("state")  # This contains user_id
+        
+        if not code or not state:
+            raise HTTPException(status_code=400, detail="Missing authorization code or state")
+        
+        # Configure OAuth flow
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [GOOGLE_REDIRECT_URI]
+                }
+            },
+            scopes=[
+                "https://www.googleapis.com/auth/calendar",
+                "https://www.googleapis.com/auth/spreadsheets",
+                "openid",
+                "email",
+                "profile"
+            ]
+        )
+        flow.redirect_uri = GOOGLE_REDIRECT_URI
+        
+        # Exchange authorization code for tokens
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        
+        # Store tokens in database
+        user_id = state
+        google_tokens = {
+            "user_id": user_id,
+            "access_token": credentials.token,
+            "refresh_token": credentials.refresh_token,
+            "token_uri": credentials.token_uri,
+            "client_id": credentials.client_id,
+            "client_secret": credentials.client_secret,
+            "scopes": credentials.scopes,
+            "created_at": datetime.utcnow(),
+            "expires_at": credentials.expiry
+        }
+        
+        # Update or create Google integration record
+        await db.google_integrations.replace_one(
+            {"user_id": user_id},
+            google_tokens,
+            upsert=True
+        )
+        
+        return {
+            "success": True,
+            "message": "Google integration successful! You can now use Calendar and Sheets features.",
+            "features_enabled": [
+                "Google Calendar sync",
+                "Auto-scheduling",
+                "Meeting intelligence",
+                "Google Sheets reports",
+                "Automated productivity tracking"
             ]
         }
         
-        return setup_instructions
+    except Exception as e:
+        logger.error(f"Google auth callback error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/google/integration/status/{user_id}")
+async def get_google_integration_status(user_id: str):
+    """Get Google integration status for a user"""
+    try:
+        integration = await db.google_integrations.find_one({"user_id": user_id})
+        
+        if not integration:
+            return {
+                "connected": False,
+                "message": "Google integration not set up",
+                "setup_required": True
+            }
+        
+        # Check if tokens are still valid
+        now = datetime.utcnow()
+        expires_at = integration.get("expires_at")
+        
+        if expires_at and expires_at < now:
+            return {
+                "connected": False,
+                "message": "Google tokens expired - please reconnect",
+                "setup_required": True,
+                "expired": True
+            }
+        
+        return {
+            "connected": True,
+            "message": "Google integration active",
+            "setup_required": False,
+            "features_available": [
+                "Google Calendar sync",
+                "Auto-scheduling with conflict detection",
+                "Meeting intelligence",
+                "Google Sheets reporting",
+                "Automated productivity exports"
+            ],
+            "connected_at": integration.get("created_at"),
+            "scopes": integration.get("scopes", [])
+        }
         
     except Exception as e:
-        logger.error(f"Google auth error: {str(e)}")
+        logger.error(f"Google integration status error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def get_google_service(user_id: str, service_name: str):
+    """Get authenticated Google service for a user"""
+    try:
+        integration = await db.google_integrations.find_one({"user_id": user_id})
+        
+        if not integration:
+            raise HTTPException(status_code=404, detail="Google integration not found")
+        
+        # Create credentials object
+        credentials = Credentials(
+            token=integration["access_token"],
+            refresh_token=integration["refresh_token"],
+            token_uri=integration["token_uri"],
+            client_id=integration["client_id"],
+            client_secret=integration["client_secret"],
+            scopes=integration["scopes"]
+        )
+        
+        # Refresh token if needed
+        if credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+            
+            # Update stored tokens
+            await db.google_integrations.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "access_token": credentials.token,
+                        "expires_at": credentials.expiry
+                    }
+                }
+            )
+        
+        # Build and return service
+        if service_name == "calendar":
+            return build('calendar', 'v3', credentials=credentials)
+        elif service_name == "sheets":
+            return build('sheets', 'v4', credentials=credentials)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported service")
+            
+    except Exception as e:
+        logger.error(f"Google service creation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/auto-scheduler/optimal-time")
