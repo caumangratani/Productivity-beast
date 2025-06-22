@@ -8,7 +8,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-const FASTAPI_URL = process.env.FASTAPI_URL || 'https://ee90ce40-e7e1-4fc3-b144-06755894b42a.preview.emergentagent.com'
+const FASTAPI_URL = process.env.FASTAPI_URL || 'https://7bcc4736-6de3-4866-a164-93fd772b981a.preview.emergentagent.com'
 
 let sock = null
 let qrCode = null

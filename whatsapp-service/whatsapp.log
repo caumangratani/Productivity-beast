@@ -3,7 +3,7 @@
 > node server.js
 
 🌐 WhatsApp service running on port 3001
-📱 FastAPI URL: https://ee90ce40-e7e1-4fc3-b144-06755894b42a.preview.emergentagent.com
+📱 FastAPI URL: https://7bcc4736-6de3-4866-a164-93fd772b981a.preview.emergentagent.com
 🚀 Initializing WhatsApp connection...
 {"level":30,"time":"2025-06-17T11:39:56.495Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","browser":["Productivity Beast","Chrome","1.0.0"],"helloMsg":{"clientHello":{"ephemeral":"bss0g76beuaJiSnIcc92Hiu0gfn1VRuLNMKdDS9s/Dk="}},"msg":"connected to WA"}
 {"level":30,"time":"2025-06-17T11:39:56.566Z","pid":4800,"hostname":"agent-env-ee90ce40-e7e1-4fc3-b144-06755894b42a","class":"baileys","node":{"passive":false,"userAgent":{"platform":"WEB","appVersion":{"primary":2,"secondary":3000,"tertiary":1023223821},"mcc":"000","mnc":"000","osVersion":"0.1","device":"Desktop","osBuildNumber":"0.1","releaseChannel":"RELEASE","localeLanguageIso6391":"en","localeCountryIso31661Alpha2":"US"},"webInfo":{"webSubPlatform":"WEB_BROWSER"},"connectType":"WIFI_UNKNOWN","connectReason":"USER_ACTIVATED","devicePairingData":{"eRegid":"AAAAuA==","eKeytype":"BQ==","eIdent":"MWWPGOGvUmsVSO6wf4WS8xMpnRlNmfpsc0Cmr9NeD0U=","eSkeyId":"AAAB","eSkeyVal":"alAb4CDf/FofwQchkpCCMIiR2vj3/MvkT6m6z9JooSw=","eSkeySig":"V5USkLK63tB0Z53owgRwY/cZ8rF5bvRLKfpXpCI8jGTYVrK7e+zaKwMA4aP50uk7RB7lVt80+M0KpuLP4gmngw==","buildHash":"c9lQeUMlTdrMrIi/+YcPiA==","deviceProps":"ChJQcm9kdWN0aXZpdHkgQmVhc3QYASAA"},"pull":false},"msg":"not logged in, attempting registration..."}

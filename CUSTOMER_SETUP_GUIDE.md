@@ -1,7 +1,7 @@
 # 🔧 CUSTOMER API SETUP GUIDE
 
 ## **Quick Start: Login & Test**
-1. **Go to**: https://ee90ce40-e7e1-4fc3-b144-06755894b42a.preview.emergentagent.com
+1. **Go to**: https://7bcc4736-6de3-4866-a164-93fd772b981a.preview.emergentagent.com
 2. **Login with**:
    - Email: `demo@productivitybeast.com`
    - Password: `demo123`
