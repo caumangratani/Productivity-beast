@@ -150,6 +150,8 @@ function App() {
         return <TeamPerformance users={users} />;
       case 'ai-coach':
         return <AICoach currentUser={user} />;
+      case 'auto-scheduler':
+        return <AutoScheduler currentUser={user} />;
       case 'team':
         return <TeamManagement currentUser={user} />;
       case 'whatsapp':
