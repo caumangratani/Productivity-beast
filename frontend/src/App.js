@@ -176,6 +176,8 @@ function App() {
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [users, setUsers] = useState([]);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
