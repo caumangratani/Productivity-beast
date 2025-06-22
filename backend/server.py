@@ -385,6 +385,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
+    phone_number: Optional[str] = None  # Added for WhatsApp integration
     role: str = "team_member"  # team_member, manager, admin
     performance_score: float = 0.0
     tasks_completed: int = 0
