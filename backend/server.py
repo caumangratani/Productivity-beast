@@ -1828,6 +1828,23 @@ async def create_user(signup_data: AuthSignup):
     await db.users.insert_one(user.dict())
     return user
 
+@api_router.put("/users/{user_id}/phone")
+async def update_user_phone(user_id: str, request: dict, current_user: User = Depends(get_current_user)):
+    """Update user's phone number for WhatsApp integration"""
+    phone_number = request.get("phone_number", "").strip()
+    
+    # Basic validation
+    if phone_number and not phone_number.startswith("+"):
+        raise HTTPException(status_code=400, detail="Phone number must include country code (e.g., +1234567890)")
+    
+    # Update user phone number
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"phone_number": phone_number if phone_number else None}}
+    )
+    
+    return {"success": True, "message": "Phone number updated successfully"}
+
 @api_router.get("/users", response_model=List[User])
 async def get_users():
     users = await db.users.find().to_list(1000)
