@@ -992,7 +992,249 @@ Need advanced features? Visit the web app! 🚀"""
 
 Type *help* for all commands."""
 
-@api_router.get("/whatsapp/status")
+@api_router.post("/whatsapp/send-team-message")
+async def send_team_message(request: dict):
+    """Send message to all team members"""
+    try:
+        sender_id = request.get("sender_id", "")
+        message = request.get("message", "")
+        team_id = request.get("team_id", None)
+        
+        # Get sender info
+        sender = await db.users.find_one({"id": sender_id})
+        if not sender:
+            raise HTTPException(status_code=404, detail="Sender not found")
+        
+        # Get team members
+        if team_id:
+            # Get team members from specific project
+            project = await db.projects.find_one({"id": team_id})
+            if not project:
+                raise HTTPException(status_code=404, detail="Team/Project not found")
+            team_member_ids = project.get("team_members", [])
+        else:
+            # Get all team members from same company
+            team_members = await db.users.find({
+                "company_id": sender.get("company_id"),
+                "id": {"$ne": sender_id}  # Exclude sender
+            }).to_list(100)
+            team_member_ids = [member["id"] for member in team_members]
+        
+        # Send messages to team members with phone numbers
+        sent_count = 0
+        failed_count = 0
+        
+        for member_id in team_member_ids:
+            member = await db.users.find_one({"id": member_id})
+            if member and member.get("phone_number"):
+                try:
+                    formatted_message = f"📢 *Team Message from {sender['name']}:*\n\n{message}"
+                    
+                    # Send via WhatsApp service
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            "http://localhost:3001/send",
+                            json={
+                                "phone_number": member["phone_number"],
+                                "message": formatted_message
+                            },
+                            timeout=10.0
+                        )
+                        
+                        if response.status_code == 200:
+                            sent_count += 1
+                        else:
+                            failed_count += 1
+                            
+                except Exception as e:
+                    logger.error(f"Failed to send message to {member_id}: {str(e)}")
+                    failed_count += 1
+        
+        return {
+            "success": True,
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "total_members": len(team_member_ids)
+        }
+        
+    except Exception as e:
+        logger.error(f"Team message error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/send-daily-reminders")
+async def send_daily_reminders():
+    """Send daily pending task reminders to all users"""
+    try:
+        # Get all users with phone numbers
+        users = await db.users.find({"phone_number": {"$exists": True}}).to_list(1000)
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for user in users:
+            try:
+                # Get pending tasks for user
+                pending_tasks = await db.tasks.find({
+                    "assigned_to": user["id"],
+                    "status": {"$in": ["todo", "in_progress"]}
+                }).to_list(50)
+                
+                if pending_tasks:
+                    # Count overdue tasks
+                    overdue_tasks = []
+                    upcoming_tasks = []
+                    
+                    for task in pending_tasks:
+                        if task.get("due_date"):
+                            if task["due_date"].replace(tzinfo=None) < datetime.utcnow():
+                                overdue_tasks.append(task)
+                            elif (task["due_date"].replace(tzinfo=None) - datetime.utcnow()).days <= 2:
+                                upcoming_tasks.append(task)
+                    
+                    if overdue_tasks or upcoming_tasks:
+                        message = f"🌅 *Good Morning, {user['name']}!*\n\n📋 Your Task Reminder:\n\n"
+                        
+                        if overdue_tasks:
+                            message += f"🔥 *{len(overdue_tasks)} Overdue Tasks:*\n"
+                            for task in overdue_tasks[:3]:  # Show max 3
+                                message += f"• {task['title']}\n"
+                            if len(overdue_tasks) > 3:
+                                message += f"• ... and {len(overdue_tasks) - 3} more\n"
+                            message += "\n"
+                        
+                        if upcoming_tasks:
+                            message += f"⏰ *{len(upcoming_tasks)} Due Soon:*\n"
+                            for task in upcoming_tasks[:3]:  # Show max 3
+                                days_left = (task["due_date"].replace(tzinfo=None) - datetime.utcnow()).days
+                                message += f"• {task['title']} ({days_left} days)\n"
+                            if len(upcoming_tasks) > 3:
+                                message += f"• ... and {len(upcoming_tasks) - 3} more\n"
+                            message += "\n"
+                        
+                        message += f"📊 Total pending: {len(pending_tasks)}\n\n"
+                        message += "Type *list tasks* to see all tasks\nType *help* for commands"
+                        
+                        # Send via WhatsApp service
+                        async with httpx.AsyncClient() as client:
+                            response = await client.post(
+                                "http://localhost:3001/send",
+                                json={
+                                    "phone_number": user["phone_number"],
+                                    "message": message
+                                },
+                                timeout=10.0
+                            )
+                            
+                            if response.status_code == 200:
+                                sent_count += 1
+                            else:
+                                failed_count += 1
+                                
+            except Exception as e:
+                logger.error(f"Failed to send reminder to {user['id']}: {str(e)}")
+                failed_count += 1
+        
+        return {
+            "success": True,
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "total_users": len(users)
+        }
+        
+    except Exception as e:
+        logger.error(f"Daily reminders error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/send-weekly-reports")
+async def send_weekly_reports():
+    """Send weekly performance reports to managers and team members"""
+    try:
+        # Get all users
+        users = await db.users.find({"phone_number": {"$exists": True}}).to_list(1000)
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for user in users:
+            try:
+                # Calculate weekly performance
+                week_start = datetime.utcnow() - timedelta(days=7)
+                
+                # Get tasks from this week
+                weekly_tasks = await db.tasks.find({
+                    "assigned_to": user["id"],
+                    "created_at": {"$gte": week_start}
+                }).to_list(1000)
+                
+                completed_this_week = await db.tasks.find({
+                    "assigned_to": user["id"],
+                    "status": "completed",
+                    "completed_at": {"$gte": week_start}
+                }).to_list(1000)
+                
+                # Calculate stats
+                total_tasks = len(weekly_tasks)
+                completed_tasks = len(completed_this_week)
+                completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+                
+                # Get overall performance score
+                performance_score = await calculate_performance_score(user["id"])
+                
+                # Create report message
+                message = f"""📊 *Weekly Performance Report*
+👤 {user['name']}
+
+📅 Week: {week_start.strftime('%Y-%m-%d')} to {datetime.utcnow().strftime('%Y-%m-%d')}
+
+📈 **This Week's Stats:**
+• 📋 Tasks assigned: {total_tasks}
+• ✅ Tasks completed: {completed_tasks}
+• 📊 Completion rate: {completion_rate:.1f}%
+• 🏆 Performance score: {performance_score:.1f}/10
+
+"""
+                
+                # Add performance insights
+                if completion_rate >= 80:
+                    message += "🌟 **Outstanding week!** You're crushing your goals!\n\n"
+                elif completion_rate >= 60:
+                    message += "👍 **Good progress!** Keep up the momentum!\n\n"
+                else:
+                    message += "💪 **Focus needed!** Let's boost your productivity next week!\n\n"
+                
+                message += "Use the web app for detailed analytics!\n"
+                message += "Type *stats* for current performance"
+                
+                # Send via WhatsApp service
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        "http://localhost:3001/send",
+                        json={
+                            "phone_number": user["phone_number"],
+                            "message": message
+                        },
+                        timeout=10.0
+                    )
+                    
+                    if response.status_code == 200:
+                        sent_count += 1
+                    else:
+                        failed_count += 1
+                        
+            except Exception as e:
+                logger.error(f"Failed to send weekly report to {user['id']}: {str(e)}")
+                failed_count += 1
+        
+        return {
+            "success": True,
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "total_users": len(users)
+        }
+        
+    except Exception as e:
+        logger.error(f"Weekly reports error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 async def get_whatsapp_status():
     """Get WhatsApp service status"""
     try:
