@@ -439,6 +439,211 @@ def test_ai_coach_chat():
     
     logger.info("AI coach chat test passed")
 
+def test_whatsapp_message_processing():
+    """Test WhatsApp message processing endpoint with enhanced commands"""
+    # Test various WhatsApp commands
+    commands = [
+        {
+            "command": "create task: test task",
+            "expected_success": True,
+            "check_phrase": "Task Created Successfully"
+        },
+        {
+            "command": "assign task to Test User 0: review documents",
+            "expected_success": True,
+            "check_phrase": "Task Assigned Successfully"
+        },
+        {
+            "command": "team list",
+            "expected_success": True,
+            "check_phrase": "Your Team Members"
+        },
+        {
+            "command": "stats",
+            "expected_success": True,
+            "check_phrase": "Your Productivity Dashboard"
+        },
+        {
+            "command": "message team: test message",
+            "expected_success": True,
+            "check_phrase": "Team Message Sent"
+        },
+        {
+            "command": "help",
+            "expected_success": True,
+            "check_phrase": "Productivity Beast WhatsApp Bot"
+        }
+    ]
+    
+    # Create a test user with phone number for WhatsApp
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    user_data = {
+        "name": f"WhatsApp Test User",
+        "email": f"whatsapp_{timestamp}@example.com",
+        "phone_number": f"+1555{timestamp[-4:]}",
+        "password": "SecurePassword!",
+        "company": "Test Company",
+        "plan": "personal"
+    }
+    
+    response = requests.post(f"{API_URL}/users", json=user_data)
+    assert response.status_code == 200, f"Failed to create user: {response.text}"
+    whatsapp_user = response.json()
+    
+    for cmd in commands:
+        request_data = {
+            "phone_number": user_data["phone_number"],
+            "message": cmd["command"],
+            "message_id": str(uuid.uuid4()),
+            "timestamp": int(datetime.utcnow().timestamp())
+        }
+        
+        response = requests.post(f"{API_URL}/whatsapp/message", json=request_data)
+        assert response.status_code == 200, f"Failed to process WhatsApp message: {response.text}"
+        
+        result = response.json()
+        assert "reply" in result
+        assert "success" in result
+        assert result["success"] == cmd["expected_success"]
+        
+        # Check for expected phrase in response
+        assert cmd["check_phrase"] in result["reply"], f"Expected '{cmd['check_phrase']}' in response, but got: {result['reply']}"
+        
+        logger.info(f"WhatsApp command test passed: {cmd['command']}")
+    
+    logger.info("WhatsApp message processing tests passed")
+
+def test_team_messaging():
+    """Test team messaging endpoint"""
+    # Create test users with phone numbers
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    team_users = []
+    
+    for i in range(2):
+        user_data = {
+            "name": f"Team Message User {i}",
+            "email": f"teammsg{i}_{timestamp}@example.com",
+            "phone_number": f"+1666{timestamp[-4:]}{i}",
+            "password": f"SecurePassword{i}!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        response = requests.post(f"{API_URL}/users", json=user_data)
+        assert response.status_code == 200, f"Failed to create user: {response.text}"
+        team_users.append(response.json())
+    
+    # Test sending team message
+    request_data = {
+        "sender_id": team_users[0]["id"],
+        "message": "Test team message from automated tests",
+        "team_id": None  # Send to all team members
+    }
+    
+    response = requests.post(f"{API_URL}/whatsapp/send-team-message", json=request_data)
+    assert response.status_code == 200, f"Failed to send team message: {response.text}"
+    
+    result = response.json()
+    assert "success" in result
+    assert result["success"] == True
+    assert "sent_count" in result
+    assert "failed_count" in result
+    assert "total_members" in result
+    
+    logger.info("Team messaging test passed")
+
+def test_daily_reminders():
+    """Test daily reminders endpoint"""
+    response = requests.post(f"{API_URL}/whatsapp/send-daily-reminders")
+    assert response.status_code == 200, f"Failed to send daily reminders: {response.text}"
+    
+    result = response.json()
+    assert "success" in result
+    assert result["success"] == True
+    assert "sent_count" in result
+    assert "failed_count" in result
+    assert "total_users" in result
+    
+    logger.info("Daily reminders test passed")
+
+def test_weekly_reports():
+    """Test weekly reports endpoint"""
+    response = requests.post(f"{API_URL}/whatsapp/send-weekly-reports")
+    assert response.status_code == 200, f"Failed to send weekly reports: {response.text}"
+    
+    result = response.json()
+    assert "success" in result
+    assert result["success"] == True
+    assert "sent_count" in result
+    assert "failed_count" in result
+    assert "total_users" in result
+    
+    logger.info("Weekly reports test passed")
+
+def test_phone_number_management():
+    """Test phone number management endpoint"""
+    # Create a test user
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    user_data = {
+        "name": f"Phone Test User",
+        "email": f"phonetest_{timestamp}@example.com",
+        "password": "SecurePassword!",
+        "company": "Test Company",
+        "plan": "personal"
+    }
+    
+    response = requests.post(f"{API_URL}/users", json=user_data)
+    assert response.status_code == 200, f"Failed to create user: {response.text}"
+    user = response.json()
+    
+    # Update phone number
+    phone_number = f"+1777{timestamp[-4:]}"
+    update_data = {
+        "phone_number": phone_number
+    }
+    
+    response = requests.put(f"{API_URL}/users/{user['id']}/phone", json=update_data)
+    assert response.status_code == 200, f"Failed to update phone number: {response.text}"
+    
+    result = response.json()
+    assert "id" in result
+    assert "phone_number" in result
+    assert result["phone_number"] == phone_number
+    
+    # Verify phone number was updated
+    response = requests.get(f"{API_URL}/users/{user['id']}")
+    assert response.status_code == 200
+    updated_user = response.json()
+    assert updated_user["phone_number"] == phone_number
+    
+    logger.info("Phone number management test passed")
+
+def test_whatsapp_service_integration():
+    """Test WhatsApp service integration endpoints"""
+    # Test WhatsApp status endpoint
+    response = requests.get(f"{API_URL}/whatsapp/status")
+    assert response.status_code in [200, 503], f"Unexpected status code: {response.status_code}"
+    
+    if response.status_code == 200:
+        result = response.json()
+        assert "connected" in result
+        assert "status" in result
+    else:
+        # Service might be unavailable in test environment, which is acceptable
+        logger.info("WhatsApp service unavailable, skipping detailed status check")
+    
+    # Test QR code endpoint
+    response = requests.get(f"{API_URL}/whatsapp/qr")
+    assert response.status_code in [200, 503], f"Unexpected status code: {response.status_code}"
+    
+    if response.status_code == 200:
+        result = response.json()
+        assert "qr" in result or "status" in result
+    else:
+        logger.info("WhatsApp QR service unavailable, skipping detailed check")
+    
+    logger.info("WhatsApp service integration tests passed")
+
 if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
@@ -454,6 +659,14 @@ if __name__ == "__main__":
         test_sample_data_population()
         test_auth_endpoints()
         test_ai_coach_chat()
+        
+        # WhatsApp integration tests
+        test_whatsapp_message_processing()
+        test_team_messaging()
+        test_daily_reminders()
+        test_weekly_reports()
+        test_phone_number_management()
+        test_whatsapp_service_integration()
         
         logger.info("All tests passed successfully!")
     except Exception as e:
