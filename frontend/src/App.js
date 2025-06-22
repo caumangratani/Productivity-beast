@@ -42,6 +42,7 @@ const Navigation = ({ activeSection, setActiveSection, onLogout, user }) => {
                 { key: 'projects', label: 'Team Projects', icon: '📋' },
                 { key: 'performance', label: 'Team Performance', icon: '📈' },
                 { key: 'ai-coach', label: 'AI Coach', icon: '🤖' },
+                { key: 'auto-scheduler', label: 'Auto-Scheduler', icon: '🤖' },
                 { key: 'team', label: 'Team Management', icon: '👥' },
                 { key: 'whatsapp', label: 'WhatsApp Bot', icon: '📱' },
                 { key: 'integrations', label: 'Integrations', icon: '🔗' },
