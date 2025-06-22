@@ -584,9 +584,9 @@ def test_weekly_reports():
 
 def test_phone_number_management():
     """Test phone number management endpoint"""
-    # Create a test user
+    # First, we need to authenticate to get a token
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    user_data = {
+    signup_data = {
         "name": f"Phone Test User",
         "email": f"phonetest_{timestamp}@example.com",
         "password": "SecurePassword!",
@@ -594,9 +594,22 @@ def test_phone_number_management():
         "plan": "personal"
     }
     
-    response = requests.post(f"{API_URL}/users", json=user_data)
-    assert response.status_code == 200, f"Failed to create user: {response.text}"
-    user = response.json()
+    # Create user via signup
+    response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+    assert response.status_code == 200, f"Failed to signup: {response.text}"
+    
+    # Login to get token
+    login_data = {
+        "email": signup_data["email"],
+        "password": signup_data["password"]
+    }
+    
+    response = requests.post(f"{API_URL}/auth/login", json=login_data)
+    assert response.status_code == 200, f"Failed to login: {response.text}"
+    login_result = response.json()
+    token = login_result["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    user_id = login_result["user"]["id"]
     
     # Update phone number
     phone_number = f"+1777{timestamp[-4:]}"
@@ -604,7 +617,7 @@ def test_phone_number_management():
         "phone_number": phone_number
     }
     
-    response = requests.put(f"{API_URL}/users/{user['id']}/phone", json=update_data)
+    response = requests.put(f"{API_URL}/users/{user_id}/phone", json=update_data, headers=headers)
     assert response.status_code == 200, f"Failed to update phone number: {response.text}"
     
     result = response.json()
@@ -613,7 +626,7 @@ def test_phone_number_management():
     assert result["phone_number"] == phone_number
     
     # Verify phone number was updated
-    response = requests.get(f"{API_URL}/users/{user['id']}")
+    response = requests.get(f"{API_URL}/users/{user_id}", headers=headers)
     assert response.status_code == 200
     updated_user = response.json()
     assert updated_user["phone_number"] == phone_number
