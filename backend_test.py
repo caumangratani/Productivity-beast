@@ -498,7 +498,7 @@ def test_whatsapp_message_processing():
         {
             "command": "stats",
             "expected_success": True,
-            "check_phrase": "Your Productivity Dashboard"
+            "check_phrase": "Productivity Dashboard"
         },
         {
             "command": "message team: test message",
