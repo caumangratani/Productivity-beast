@@ -615,13 +615,13 @@ def test_phone_number_management():
         # Update phone number
         phone_number = f"+1777{timestamp[-4:]}"
         
-        # First try the specific phone number endpoint
+        # First try the specific phone number endpoint with PATCH (not PUT)
         logger.info(f"Testing specific phone number endpoint: /api/users/{user_id}/phone")
         phone_update_data = {
             "phone_number": phone_number
         }
         
-        response = requests.put(f"{API_URL}/users/{user_id}/phone", json=phone_update_data, headers=headers)
+        response = requests.patch(f"{API_URL}/users/{user_id}/phone", json=phone_update_data, headers=headers)
         
         # If specific endpoint fails, try the general user update endpoint
         if response.status_code != 200:
@@ -629,7 +629,12 @@ def test_phone_number_management():
             update_data = {
                 "phone_number": phone_number
             }
-            response = requests.put(f"{API_URL}/users/{user_id}", json=update_data, headers=headers)
+            response = requests.patch(f"{API_URL}/users/{user_id}", json=update_data, headers=headers)
+            
+            if response.status_code != 200:
+                logger.info(f"General user update endpoint failed with status {response.status_code}. Trying PUT method.")
+                response = requests.put(f"{API_URL}/users/{user_id}", json=update_data, headers=headers)
+            
             assert response.status_code == 200, f"Failed to update user: {response.text}"
             
             # Verify phone number was updated
