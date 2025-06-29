@@ -967,6 +967,12 @@ if __name__ == "__main__":
         test_phone_number_management()
         test_whatsapp_service_integration()
         
+        # Google integration tests
+        test_google_oauth_flow()
+        test_google_integration_status()
+        test_google_calendar_sync()
+        test_google_auto_scheduler()
+        
         logger.info("All tests passed successfully!")
     except Exception as e:
         logger.error(f"Tests failed: {e}")
