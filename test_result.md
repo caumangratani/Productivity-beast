@@ -486,7 +486,7 @@
 
 ## test_plan:
   current_focus:
-    - "Phone Number Management"
+    - "Authentication"
   stuck_tasks:
     - "Authentication"
     - "Main App component with navigation"
@@ -497,7 +497,6 @@
     - "AI Coach interface"
     - "WhatsApp Integration"
     - "Team Management"
-    - "Phone Number Management"
   test_all: false
   test_priority: "high_first"
 
