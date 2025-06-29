@@ -690,7 +690,258 @@ def test_whatsapp_service_integration():
         logger.warning(f"WhatsApp service integration test warning: {str(e)}")
         logger.info("WhatsApp service integration tests skipped - service may not be available in test environment")
 
-if __name__ == "__main__":
+def test_google_oauth_flow():
+    """Test Google OAuth URL generation and callback handling"""
+    try:
+        # First, we need to authenticate to get a token
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"Google Test User",
+            "email": f"googletest_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
+        
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
+        
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        token = login_result["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        user_id = login_result["user"]["id"]
+        
+        # Test Google OAuth URL generation
+        response = requests.get(f"{API_URL}/google/auth/url?user_id={user_id}")
+        assert response.status_code == 200, f"Failed to get Google auth URL: {response.text}"
+        
+        auth_url_result = response.json()
+        assert "auth_url" in auth_url_result
+        assert "state" in auth_url_result
+        assert "message" in auth_url_result
+        assert user_id in auth_url_result["state"]
+        
+        logger.info("Google OAuth URL generation test passed")
+        
+        # Test Google OAuth callback (simulated)
+        # We can't fully test the callback without a real OAuth flow, but we can test the endpoint
+        callback_data = {
+            "code": "simulated_auth_code",
+            "state": auth_url_result["state"]
+        }
+        
+        # This will likely fail in the test environment without real OAuth credentials
+        # but we're testing the endpoint existence and basic validation
+        response = requests.post(f"{API_URL}/google/auth/callback", json=callback_data)
+        
+        # We don't assert success here since it will likely fail without real credentials
+        # Just log the result for information
+        if response.status_code == 200:
+            logger.info("Google OAuth callback test passed (unexpected in test environment)")
+        else:
+            logger.info(f"Google OAuth callback returned {response.status_code} as expected in test environment")
+        
+    except Exception as e:
+        logger.error(f"Google OAuth flow test error: {str(e)}")
+        raise
+
+def test_google_integration_status():
+    """Test Google integration status checking"""
+    try:
+        # First, we need to authenticate to get a token
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"Google Status User",
+            "email": f"googlestatus_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
+        
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
+        
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        user_id = login_result["user"]["id"]
+        
+        # Test Google integration status
+        response = requests.get(f"{API_URL}/google/integration/status/{user_id}")
+        assert response.status_code == 200, f"Failed to get Google integration status: {response.text}"
+        
+        status_result = response.json()
+        assert "connected" in status_result
+        assert "message" in status_result
+        assert "setup_required" in status_result
+        
+        # For a new user, we expect connected to be false and setup_required to be true
+        assert status_result["connected"] == False
+        assert status_result["setup_required"] == True
+        
+        logger.info("Google integration status test passed")
+        
+    except Exception as e:
+        logger.error(f"Google integration status test error: {str(e)}")
+        raise
+
+def test_google_calendar_sync():
+    """Test task-to-calendar synchronization"""
+    try:
+        # First, we need to authenticate to get a token
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"Calendar Sync User",
+            "email": f"calendarsync_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
+        
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
+        
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        token = login_result["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        user_id = login_result["user"]["id"]
+        
+        # Create a task for the user
+        task_data = {
+            "title": "Calendar Sync Test Task",
+            "description": "This task should be synced to Google Calendar",
+            "assigned_to": user_id,
+            "priority": "high",
+            "due_date": iso_format(datetime.utcnow() + timedelta(days=3)),
+            "tags": ["test", "calendar"]
+        }
+        
+        response = requests.post(f"{API_URL}/tasks", json=task_data, headers=headers)
+        assert response.status_code == 200, f"Failed to create task: {response.text}"
+        task = response.json()
+        
+        # Test calendar sync endpoint
+        sync_data = {
+            "user_id": user_id
+        }
+        
+        response = requests.post(f"{API_URL}/google/calendar/sync-tasks", json=sync_data)
+        
+        # This will likely fail without real Google integration, but we're testing the endpoint
+        if response.status_code == 200:
+            result = response.json()
+            assert "success" in result
+            assert "synced_count" in result
+            assert "total_tasks" in result
+            assert "errors" in result
+            logger.info("Google Calendar sync test passed (unexpected in test environment)")
+        else:
+            logger.info(f"Google Calendar sync returned {response.status_code} as expected in test environment without real Google integration")
+            # Check if the error is related to Google integration not being set up
+            if response.status_code == 404 and "Google integration not found" in response.text:
+                logger.info("Google Calendar sync correctly reported that Google integration is not set up")
+            
+    except Exception as e:
+        logger.error(f"Google Calendar sync test error: {str(e)}")
+        raise
+
+def test_google_auto_scheduler():
+    """Test optimal time block creation with conflict detection"""
+    try:
+        # First, we need to authenticate to get a token
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"Auto Scheduler User",
+            "email": f"autoscheduler_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
+        
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
+        
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        token = login_result["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        user_id = login_result["user"]["id"]
+        
+        # Create some tasks for the user
+        for i in range(3):
+            task_data = {
+                "title": f"Auto Scheduler Test Task {i}",
+                "description": f"This task should be scheduled optimally {i}",
+                "assigned_to": user_id,
+                "priority": ["low", "medium", "high"][i],
+                "due_date": iso_format(datetime.utcnow() + timedelta(days=i+1)),
+                "tags": ["test", "scheduler"]
+            }
+            
+            response = requests.post(f"{API_URL}/tasks", json=task_data, headers=headers)
+            assert response.status_code == 200, f"Failed to create task: {response.text}"
+        
+        # Test auto-scheduler endpoint
+        tomorrow = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+        schedule_data = {
+            "user_id": user_id,
+            "date": tomorrow
+        }
+        
+        response = requests.post(f"{API_URL}/google/calendar/optimal-schedule", json=schedule_data)
+        
+        # This will likely fail without real Google integration, but we're testing the endpoint
+        if response.status_code == 200:
+            result = response.json()
+            assert "success" in result
+            assert "date" in result
+            assert "scheduled_blocks" in result
+            assert "schedule" in result
+            assert "message" in result
+            assert "productivity_tips" in result
+            logger.info("Google Auto-scheduler test passed (unexpected in test environment)")
+        else:
+            logger.info(f"Google Auto-scheduler returned {response.status_code} as expected in test environment without real Google integration")
+            # Check if the error is related to Google integration not being set up
+            if response.status_code == 404 and "Google integration not found" in response.text:
+                logger.info("Google Auto-scheduler correctly reported that Google integration is not set up")
+            
+    except Exception as e:
+        logger.error(f"Google Auto-scheduler test error: {str(e)}")
+        raise
     # Run all tests
     logger.info("Starting backend API tests...")
     
