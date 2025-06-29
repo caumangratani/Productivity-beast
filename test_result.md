@@ -257,11 +257,11 @@
         
   - task: "Phone Number Management"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
         - agent: "main"
@@ -269,6 +269,9 @@
         - working: false
         - agent: "testing"
         - comment: "Phone number management endpoint is not working correctly. The specific endpoint for updating phone numbers (/api/users/{user_id}/phone) returns a 'Method Not Allowed' error. The general user update endpoint may need to be used instead."
+        - working: true
+        - agent: "testing"
+        - comment: "Phone number management endpoint is now working correctly. The issue was that the endpoint uses PATCH method instead of PUT. Successfully updated phone number using the specific endpoint (/api/users/{user_id}/phone) with PATCH method."
         
   - task: "WhatsApp Service Integration"
     implemented: true
