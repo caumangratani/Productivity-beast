@@ -81,7 +81,7 @@ const WhatsAppIntegration = ({ currentUser }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API}/users/${currentUser.id}/phone`, 
+      await axios.patch(`${API}/users/${currentUser.id}/phone`, 
         { phone_number: phoneNumber },
         { headers: { Authorization: `Bearer ${token}` } }
       );
