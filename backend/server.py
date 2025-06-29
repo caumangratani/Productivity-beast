@@ -94,7 +94,7 @@ import json
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-GOOGLE_REDIRECT_URI = "https://project-continue-1.emergent.host/auth/google/callback"
+GOOGLE_REDIRECT_URI = "https://project-continue-1.emergent.host/google-callback.html"
 
 @api_router.get("/google/auth/url")
 async def get_google_auth_url(user_id: str):
