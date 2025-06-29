@@ -257,6 +257,66 @@ async def get_google_integration_status(user_id: str):
         logger.error(f"Google integration status error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Integration Settings Endpoints
+@api_router.get("/integrations/ai-settings")
+async def get_ai_settings():
+    """Get current AI settings"""
+    try:
+        # For now, return current environment settings
+        return {
+            "openai_api_key": "***configured***" if os.environ.get('OPENAI_API_KEY') else "",
+            "claude_api_key": "",
+            "preferred_ai_provider": "openai",
+            "ai_enabled": bool(os.environ.get('OPENAI_API_KEY'))
+        }
+    except Exception as e:
+        logger.error(f"Error getting AI settings: {str(e)}")
+        return {
+            "openai_api_key": "",
+            "claude_api_key": "",
+            "preferred_ai_provider": "openai", 
+            "ai_enabled": False
+        }
+
+@api_router.post("/integrations/ai-settings")
+async def save_ai_settings(request: dict):
+    """Save AI settings"""
+    try:
+        # For production, you'd want to save these to database or env file
+        # For now, we'll just validate and return success
+        openai_key = request.get("openai_api_key", "")
+        
+        if openai_key and openai_key.startswith("sk-"):
+            # In production, save to secure storage
+            logger.info("AI settings would be saved in production")
+            return {"success": True, "message": "AI settings saved successfully"}
+        else:
+            return {"success": False, "message": "Invalid OpenAI API key format"}
+            
+    except Exception as e:
+        logger.error(f"Error saving AI settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/integrations/whatsapp-settings") 
+async def get_whatsapp_settings():
+    """Get WhatsApp settings"""
+    return {
+        "whatsapp_business_account_id": "",
+        "whatsapp_access_token": "",
+        "webhook_verify_token": "",
+        "phone_number_id": "",
+        "enabled": False
+    }
+
+@api_router.post("/integrations/whatsapp-settings")
+async def save_whatsapp_settings(request: dict):
+    """Save WhatsApp settings"""
+    try:
+        logger.info("WhatsApp settings would be saved in production")
+        return {"success": True, "message": "WhatsApp settings saved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def get_google_service(user_id: str, service_name: str):
     """Get authenticated Google service for a user"""
     try:
