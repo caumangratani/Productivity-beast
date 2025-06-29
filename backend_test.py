@@ -614,29 +614,54 @@ def test_phone_number_management():
         
         # Update phone number
         phone_number = f"+1777{timestamp[-4:]}"
-        update_data = {
+        
+        # First try the specific phone number endpoint
+        logger.info(f"Testing specific phone number endpoint: /api/users/{user_id}/phone")
+        phone_update_data = {
             "phone_number": phone_number
         }
         
-        # Try to update the user directly since the specific phone endpoint might not exist
-        response = requests.put(f"{API_URL}/users/{user_id}", json=update_data, headers=headers)
-        assert response.status_code == 200, f"Failed to update user: {response.text}"
+        response = requests.put(f"{API_URL}/users/{user_id}/phone", json=phone_update_data, headers=headers)
         
-        # Verify phone number was updated
-        response = requests.get(f"{API_URL}/users/{user_id}", headers=headers)
-        assert response.status_code == 200
-        updated_user = response.json()
-        
-        # Check if phone number was updated or if the field exists
-        if "phone_number" in updated_user:
-            assert updated_user["phone_number"] == phone_number
-            logger.info("Phone number management test passed")
+        # If specific endpoint fails, try the general user update endpoint
+        if response.status_code != 200:
+            logger.info(f"Specific phone endpoint failed with status {response.status_code}. Trying general user update endpoint.")
+            update_data = {
+                "phone_number": phone_number
+            }
+            response = requests.put(f"{API_URL}/users/{user_id}", json=update_data, headers=headers)
+            assert response.status_code == 200, f"Failed to update user: {response.text}"
+            
+            # Verify phone number was updated
+            response = requests.get(f"{API_URL}/users/{user_id}", headers=headers)
+            assert response.status_code == 200
+            updated_user = response.json()
+            
+            # Check if phone number was updated or if the field exists
+            if "phone_number" in updated_user:
+                assert updated_user["phone_number"] == phone_number
+                logger.info("Phone number management test passed using general user update endpoint")
+            else:
+                logger.warning("Phone number field not available in user object after update")
         else:
-            logger.info("Phone number field not available in user object, test skipped")
+            # Specific phone endpoint worked
+            result = response.json()
+            logger.info(f"Specific phone endpoint succeeded: {result}")
+            
+            # Verify phone number was updated
+            response = requests.get(f"{API_URL}/users/{user_id}", headers=headers)
+            assert response.status_code == 200
+            updated_user = response.json()
+            
+            if "phone_number" in updated_user:
+                assert updated_user["phone_number"] == phone_number
+                logger.info("Phone number management test passed using specific phone endpoint")
+            else:
+                logger.warning("Phone number field not available in user object after update")
     
     except Exception as e:
-        logger.warning(f"Phone number management test warning: {str(e)}")
-        logger.info("Phone number management test skipped - endpoint may not be implemented yet")
+        logger.error(f"Phone number management test error: {str(e)}")
+        raise
 
 def test_whatsapp_service_integration():
     """Test WhatsApp service integration endpoints"""
