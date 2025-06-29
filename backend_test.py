@@ -948,6 +948,79 @@ def test_google_auto_scheduler():
         logger.error(f"Google Auto-scheduler test error: {str(e)}")
         raise
 
+def test_ai_settings_integration():
+    """Test AI settings integration endpoints"""
+    try:
+        # Test GET AI settings
+        response = requests.get(f"{API_URL}/integrations/ai-settings")
+        assert response.status_code == 200, f"Failed to get AI settings: {response.text}"
+        
+        ai_settings = response.json()
+        assert "openai_api_key" in ai_settings
+        assert "claude_api_key" in ai_settings
+        assert "preferred_ai_provider" in ai_settings
+        assert "ai_enabled" in ai_settings
+        
+        logger.info("GET AI settings test passed")
+        
+        # Test POST AI settings
+        settings_data = {
+            "openai_api_key": "sk-test123456789abcdefghijklmnopqrstuvwxyz",
+            "claude_api_key": "",
+            "preferred_ai_provider": "openai"
+        }
+        
+        response = requests.post(f"{API_URL}/integrations/ai-settings", json=settings_data)
+        assert response.status_code == 200, f"Failed to save AI settings: {response.text}"
+        
+        result = response.json()
+        assert "success" in result
+        assert "message" in result
+        
+        logger.info("POST AI settings test passed")
+        
+    except Exception as e:
+        logger.error(f"AI settings integration test error: {str(e)}")
+        raise
+
+def test_whatsapp_settings_integration():
+    """Test WhatsApp settings integration endpoints"""
+    try:
+        # Test GET WhatsApp settings
+        response = requests.get(f"{API_URL}/integrations/whatsapp-settings")
+        assert response.status_code == 200, f"Failed to get WhatsApp settings: {response.text}"
+        
+        whatsapp_settings = response.json()
+        assert "whatsapp_business_account_id" in whatsapp_settings
+        assert "whatsapp_access_token" in whatsapp_settings
+        assert "webhook_verify_token" in whatsapp_settings
+        assert "phone_number_id" in whatsapp_settings
+        assert "enabled" in whatsapp_settings
+        
+        logger.info("GET WhatsApp settings test passed")
+        
+        # Test POST WhatsApp settings
+        settings_data = {
+            "whatsapp_business_account_id": "123456789",
+            "whatsapp_access_token": "test_access_token",
+            "webhook_verify_token": "test_verify_token",
+            "phone_number_id": "987654321",
+            "enabled": True
+        }
+        
+        response = requests.post(f"{API_URL}/integrations/whatsapp-settings", json=settings_data)
+        assert response.status_code == 200, f"Failed to save WhatsApp settings: {response.text}"
+        
+        result = response.json()
+        assert "success" in result
+        assert "message" in result
+        
+        logger.info("POST WhatsApp settings test passed")
+        
+    except Exception as e:
+        logger.error(f"WhatsApp settings integration test error: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
@@ -971,12 +1044,16 @@ if __name__ == "__main__":
         test_weekly_reports()
         test_phone_number_management()
         test_whatsapp_service_integration()
+        test_whatsapp_settings_integration()
         
         # Google integration tests
         test_google_oauth_flow()
         test_google_integration_status()
         test_google_calendar_sync()
         test_google_auto_scheduler()
+        
+        # AI integration tests
+        test_ai_settings_integration()
         
         logger.info("All tests passed successfully!")
     except Exception as e:
