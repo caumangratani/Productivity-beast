@@ -942,6 +942,8 @@ def test_google_auto_scheduler():
     except Exception as e:
         logger.error(f"Google Auto-scheduler test error: {str(e)}")
         raise
+
+if __name__ == "__main__":
     # Run all tests
     logger.info("Starting backend API tests...")
     
