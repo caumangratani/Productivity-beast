@@ -169,43 +169,44 @@ const LandingPage = ({ onLogin }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
     try {
-      console.log('🔐 Login attempt started...');
-      console.log('Backend URL:', BACKEND_URL);
-      console.log('API endpoint:', `${API}/auth/login`);
-      console.log('Form data:', { email: formData.email, password: '***hidden***' });
-      
       const response = await axios.post(`${API}/auth/login`, {
-        email: formData.email,
-        password: formData.password
+        email: loginData.email,
+        password: loginData.password
       });
-      
-      console.log('✅ Login successful:', response.data);
       
       if (response.data.access_token) {
+        // Store token and user data
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        setShowLogin(false);
-        onLogin(response.data.user);
+        setCurrentUser(response.data.user);
+        setIsAuthenticated(true);
+        
+        alert('✅ Login successful! Welcome to Productivity Beast!');
       } else {
-        console.error('❌ No access token in response');
-        alert('Login failed: Invalid response format');
+        alert('❌ Login failed: Invalid response from server');
       }
     } catch (error) {
-      console.error('❌ Login error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
+      console.error('Login error:', error);
+      let errorMessage = 'Login failed';
       
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          'Unknown error occurred';
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Invalid email or password';
+        } else if (error.response.status === 422) {
+          errorMessage = 'Please enter valid email and password';
+        } else if (error.response.data?.detail) {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
       
-      alert('Login failed: ' + errorMessage);
+      alert('❌ ' + errorMessage);
     }
+    setLoading(false);
   };
 
   return (
