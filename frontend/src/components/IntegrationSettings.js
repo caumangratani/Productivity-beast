@@ -166,12 +166,33 @@ const IntegrationSettings = ({ currentUser }) => {
   };
 
   const saveAiSettings = async () => {
+    if (aiSettings.openai_api_key && !aiSettings.openai_api_key.startsWith('sk-')) {
+      alert('Invalid OpenAI API key format. It should start with "sk-"');
+      return;
+    }
+
     setLoading(true);
     try {
-      await axios.post(`${API}/integrations/ai-settings`, aiSettings);
-      alert('AI settings saved successfully!');
+      const response = await axios.post(`${API}/integrations/ai-settings`, aiSettings);
+      
+      if (response.data.success) {
+        alert('✅ AI settings saved successfully! Your AI Coach is now configured and ready to help boost your productivity.');
+      } else {
+        alert('❌ Failed to save AI settings: ' + (response.data.message || 'Unknown error'));
+      }
     } catch (error) {
-      alert('Error saving AI settings: ' + error.message);
+      console.error('Error saving AI settings:', error);
+      let errorMessage = 'Failed to save AI settings';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Authentication error. Please login again.';
+      } else if (error.response?.data?.detail) {
+        errorMessage += ': ' + error.response.data.detail;
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
+      
+      alert('❌ ' + errorMessage);
     }
     setLoading(false);
   };
