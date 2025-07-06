@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Coach Test</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        // Simple test component to check AI Coach functionality
+        const AICoachTest = () => {
+          const [messages, setMessages] = React.useState([
+            { type: 'ai', message: 'Hello! I am your AI Coach. How can I help you today?' }
+          ]);
+          const [newMessage, setNewMessage] = React.useState('');
+          const [isLoading, setIsLoading] = React.useState(false);
+          const [error, setError] = React.useState(null);
+          const [token, setToken] = React.useState('');
+          const [loginEmail, setLoginEmail] = React.useState('');
+          const [loginPassword, setLoginPassword] = React.useState('');
+
+          // Get the backend URL from the environment or use a default
+          const BACKEND_URL = 'https://7bcc4736-6de3-4866-a164-93fd772b981a.preview.emergentagent.com';
+          const API = `${BACKEND_URL}/api`;
+
+          const handleLogin = async () => {
+            try {
+              setIsLoading(true);
+              setError(null);
+              
+              const response = await axios.post(`${API}/auth/login`, {
+                email: loginEmail,
+                password: loginPassword
+              });
+              
+              setToken(response.data.access_token);
+              console.log('Login successful!', response.data);
+              
+              // Add success message
+              setMessages(prev => [...prev, { 
+                type: 'system', 
+                message: `Login successful! User: ${response.data.user.name}` 
+              }]);
+              
+            } catch (err) {
+              console.error('Login error:', err);
+              setError('Login failed: ' + (err.response?.data?.detail || err.message));
+              
+              // Add error message
+              setMessages(prev => [...prev, { 
+                type: 'system', 
+                message: `Login error: ${err.response?.data?.detail || err.message}` 
+              }]);
+            } finally {
+              setIsLoading(false);
+            }
+          };
+
+          const handleSendMessage = async () => {
+            if (!newMessage.trim() || isLoading) return;
+            
+            // Add user message to chat
+            const userMessage = { type: 'user', message: newMessage };
+            setMessages(prev => [...prev, userMessage]);
+            
+            const currentMessage = newMessage;
+            setNewMessage('');
+            setIsLoading(true);
+            setError(null);
+            
+            try {
+              console.log('Sending message to AI Coach:', currentMessage);
+              
+              // Check if it's a slash command
+              if (currentMessage.startsWith('/')) {
+                const response = await axios.post(`${API}/ai-coach/command`, {
+                  command: currentMessage.trim()
+                });
+                
+                console.log('Command response:', response.data);
+                
+                setMessages(prev => [...prev, { 
+                  type: 'ai', 
+                  message: response.data.response 
+                }]);
+              } else {
+                // Regular chat message
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                console.log('Using headers:', headers);
+                
+                const response = await axios.post(`${API}/ai-coach/chat`, {
+                  message: currentMessage,
+                  provider: 'openai'
+                }, { headers });
+                
+                console.log('Chat response:', response.data);
+                
+                setMessages(prev => [...prev, { 
+                  type: 'ai', 
+                  message: response.data.response 
+                }]);
+              }
+            } catch (err) {
+              console.error('Error sending message:', err);
+              setError('Error: ' + (err.response?.data?.detail || err.message));
+              
+              // Add error message
+              setMessages(prev => [...prev, { 
+                type: 'system', 
+                message: `Error: ${err.response?.data?.detail || err.message}` 
+              }]);
+            } finally {
+              setIsLoading(false);
+            }
+          };
+
+          return (
+            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+              <h1>AI Coach Test</h1>
+              
+              {!token && (
+                <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                  <h2>Login</h2>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Email:</label>
+                    <input 
+                      type="email" 
+                      value={loginEmail} 
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      style={{ width: '100%', padding: '8px' }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+                    <input 
+                      type="password" 
+                      value={loginPassword} 
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      style={{ width: '100%', padding: '8px' }}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleLogin} 
+                    disabled={isLoading}
+                    style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    {isLoading ? 'Logging in...' : 'Login'}
+                  </button>
+                </div>
+              )}
+              
+              {token && (
+                <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#e8f5e9', borderRadius: '5px' }}>
+                  <p>✅ Logged in successfully</p>
+                  <button 
+                    onClick={() => setToken('')}
+                    style={{ padding: '5px 10px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              
+              <div style={{ 
+                height: '400px', 
+                overflowY: 'auto', 
+                border: '1px solid #ccc', 
+                borderRadius: '5px',
+                padding: '10px',
+                marginBottom: '10px'
+              }}>
+                {messages.map((msg, index) => (
+                  <div 
+                    key={index} 
+                    style={{ 
+                      marginBottom: '10px',
+                      textAlign: msg.type === 'user' ? 'right' : 'left',
+                    }}
+                  >
+                    <div style={{ 
+                      display: 'inline-block',
+                      maxWidth: '70%',
+                      padding: '10px',
+                      borderRadius: '10px',
+                      backgroundColor: 
+                        msg.type === 'user' ? '#e3f2fd' : 
+                        msg.type === 'ai' ? '#f1f8e9' : 
+                        '#ffebee',
+                      textAlign: 'left'
+                    }}>
+                      <pre style={{ 
+                        margin: 0, 
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: 'inherit'
+                      }}>
+                        {msg.message}
+                      </pre>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div style={{ display: 'flex' }}>
+                <input 
+                  type="text" 
+                  value={newMessage} 
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type a message..."
+                  disabled={isLoading || !token}
+                  style={{ 
+                    flex: 1, 
+                    padding: '10px',
+                    borderRadius: '5px 0 0 5px',
+                    border: '1px solid #ccc',
+                    borderRight: 'none'
+                  }}
+                />
+                <button 
+                  onClick={handleSendMessage} 
+                  disabled={isLoading || !newMessage.trim() || !token}
+                  style={{ 
+                    padding: '10px 20px',
+                    backgroundColor: '#2196F3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0 5px 5px 0',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isLoading ? 'Sending...' : 'Send'}
+                </button>
+              </div>
+              
+              {error && (
+                <div style={{ 
+                  marginTop: '10px', 
+                  padding: '10px', 
+                  backgroundColor: '#ffebee', 
+                  color: '#c62828',
+                  borderRadius: '5px'
+                }}>
+                  {error}
+                </div>
+              )}
+              
+              <div style={{ marginTop: '20px' }}>
+                <h3>Quick Commands</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  <button 
+                    onClick={() => setNewMessage('/help')}
+                    style={{ padding: '8px 16px', backgroundColor: '#9c27b0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    /help
+                  </button>
+                  <button 
+                    onClick={() => setNewMessage('help me with productivity')}
+                    style={{ padding: '8px 16px', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    help me with productivity
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Render the component
+        ReactDOM.render(<AICoachTest />, document.getElementById('root'));
+    </script>
+</body>
+</html>
