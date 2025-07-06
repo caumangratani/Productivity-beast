@@ -137,15 +137,17 @@ const LandingPage = ({ onLogin }) => {
       });
 
       if (response.data.success) {
-        alert('Account created successfully! Please login with your credentials.');
-        setActiveTab('login');
+        alert('✅ Account created successfully! Please login with your credentials.');
+        setShowSignup(false);
+        setShowLogin(true);
         setSignupData({
           name: '',
           email: '',
           password: '',
           confirmPassword: '',
           company: '',
-          plan: 'Personal (₹2,000/month)'
+          plan: 'Personal (₹2,000/month)',
+          phone_number: ''
         });
       } else {
         alert('Failed to create account: ' + (response.data.message || 'Unknown error'));
