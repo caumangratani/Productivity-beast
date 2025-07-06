@@ -490,6 +490,26 @@ body {
   transition: all 0.3s ease;
   position: relative;
   margin-bottom: 0.75rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Dragging state */
+.task-card[data-rbd-drag-handle-draggable-id] {
+  cursor: grab !important;
+}
+
+.task-card[data-rbd-drag-handle-draggable-id]:active {
+  cursor: grabbing !important;
 }
 
 .btn-primary, .btn-secondary {
