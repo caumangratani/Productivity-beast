@@ -268,26 +268,26 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">Google Calendar Sync</h4>
-                <p className="text-sm text-gray-600 italic">Coming Soon - Deadline sync and meetings</p>
+                <p className="text-sm text-gray-600">✅ Active - Task deadline sync, auto-scheduling, and meeting intelligence</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">WhatsApp Integration</h4>
-                <p className="text-sm text-gray-600 italic">Coming Soon - Task notifications and updates</p>
+                <p className="text-sm text-gray-600">✅ Active - Task notifications, team messaging, and automated reports</p>
               </div>
             </div>
           </div>
