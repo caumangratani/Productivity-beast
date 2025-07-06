@@ -2330,6 +2330,14 @@ async def create_user(signup_data: AuthSignup):
         id=auth_user.id,
         name=signup_data.name,
         email=signup_data.email,
+        phone_number=signup_data.phone_number,
+        role=UserRole.ADMIN,  # First user is admin
+        company_id=company.id
+    )
+    user = User(
+        id=auth_user.id,
+        name=signup_data.name,
+        email=signup_data.email,
         role=UserRole.ADMIN,  # First user is admin
         company_id=company.id
     )
