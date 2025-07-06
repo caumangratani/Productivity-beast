@@ -16,6 +16,7 @@ const loadRazorpayScript = () => {
 };
 
 const LandingPage = ({ onLogin }) => {
+  const [loading, setLoading] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
