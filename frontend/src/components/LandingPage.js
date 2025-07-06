@@ -113,7 +113,31 @@ const LandingPage = ({ onLogin }) => {
         setShowSignup(false);
       }
     } catch (error) {
-      alert('Error creating account: ' + error.response?.data?.message || error.message);
+      console.error('Signup error:', error);
+      
+      // Improved error handling to show more specific errors
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 422) {
+          // Validation error
+          const validationErrors = error.response.data.detail;
+          if (Array.isArray(validationErrors)) {
+            const errorMessages = validationErrors.map(err => `${err.loc[1]}: ${err.msg}`).join('\n');
+            alert(`Validation error:\n${errorMessages}`);
+          } else {
+            alert('Validation error: ' + JSON.stringify(error.response.data));
+          }
+        } else {
+          alert('Error creating account: ' + (error.response.data.detail || error.response.data.message || 'Unknown error'));
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        alert('Error creating account: No response from server. Please check your connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        alert('Error creating account: ' + error.message);
+      }
     }
   };
 
