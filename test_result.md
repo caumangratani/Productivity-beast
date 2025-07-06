@@ -444,6 +444,12 @@
         - working: true
         - agent: "testing"
         - comment: "AI Coach interface is accessible and properly implemented. The AI Coach page is accessible from the main navigation. The UI for the chat interface is correctly implemented, though actual AI interactions could not be fully tested due to API limitations in the test environment."
+        - working: false
+        - agent: "user"
+        - comment: "AI Coach interface works but doesn't respond to messages."
+        - working: true
+        - agent: "testing"
+        - comment: "Fixed AI Coach chat functionality. The issue was in the frontend component's handleSendMessage function, which wasn't properly handling the API responses. Added detailed error handling, explicit user_id inclusion, and improved logging. All tests now pass, including command endpoint and chat endpoint with various configurations. The AI Coach now responds correctly to user messages."
 
   - task: "CSS styling with design principles"
     implemented: true
