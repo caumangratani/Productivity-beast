@@ -1034,7 +1034,7 @@ async def send_team_message(request: dict):
                     # Send via WhatsApp service
                     async with httpx.AsyncClient() as client:
                         response = await client.post(
-                            "http://localhost:3001/send",
+                            "http://localhost:3002/send",
                             json={
                                 "phone_number": member["phone_number"],
                                 "message": formatted_message
@@ -1101,7 +1101,7 @@ Use WhatsApp commands:
         # Send via WhatsApp service
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "http://localhost:3001/send",
+                "http://localhost:3002/send",
                 json={
                     "phone_number": assigned_to["phone_number"],
                     "message": message
@@ -1174,7 +1174,7 @@ async def send_daily_reminders():
                         # Send via WhatsApp service
                         async with httpx.AsyncClient() as client:
                             response = await client.post(
-                                "http://localhost:3001/send",
+                                "http://localhost:3002/send",
                                 json={
                                     "phone_number": user["phone_number"],
                                     "message": message
@@ -1272,7 +1272,7 @@ async def send_weekly_reports():
                 # Send via WhatsApp service
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
-                        "http://localhost:3001/send",
+                        "http://localhost:3002/send",
                         json={
                             "phone_number": user["phone_number"],
                             "message": message
@@ -1427,7 +1427,7 @@ Reply with *list tasks* to see all tasks"""
                 try:
                     async with httpx.AsyncClient() as client:
                         await client.post(
-                            "http://localhost:3001/send",
+                            "http://localhost:3002/send",
                             json={
                                 "phone_number": team_member["phone_number"],
                                 "message": notification
@@ -1589,7 +1589,7 @@ Reply with *list tasks* to see all tasks"""
                     try:
                         async with httpx.AsyncClient() as client:
                             await client.post(
-                                "http://localhost:3001/send",
+                                "http://localhost:3002/send",
                                 json={
                                     "phone_number": assigner["phone_number"],
                                     "message": notification
@@ -1772,7 +1772,7 @@ async def send_team_message(request: dict):
                     # Send via WhatsApp service
                     async with httpx.AsyncClient() as client:
                         response = await client.post(
-                            "http://localhost:3001/send",
+                            "http://localhost:3002/send",
                             json={
                                 "phone_number": member["phone_number"],
                                 "message": formatted_message
@@ -1856,7 +1856,7 @@ async def send_daily_reminders():
                         # Send via WhatsApp service
                         async with httpx.AsyncClient() as client:
                             response = await client.post(
-                                "http://localhost:3001/send",
+                                "http://localhost:3002/send",
                                 json={
                                     "phone_number": user["phone_number"],
                                     "message": message
@@ -1947,7 +1947,7 @@ async def send_weekly_reports():
                 # Send via WhatsApp service
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
-                        "http://localhost:3001/send",
+                        "http://localhost:3002/send",
                         json={
                             "phone_number": user["phone_number"],
                             "message": message
@@ -1978,7 +1978,7 @@ async def get_whatsapp_status():
     """Get WhatsApp service status"""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:3001/status", timeout=5.0)
+            response = await client.get("http://localhost:3002/status", timeout=5.0)
             return response.json()
     except Exception as e:
         return {
@@ -1992,7 +1992,7 @@ async def get_whatsapp_qr():
     """Get WhatsApp QR code for authentication"""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:3001/qr", timeout=5.0)
+            response = await client.get("http://localhost:3002/qr", timeout=5.0)
             return response.json()
     except Exception as e:
         return {
@@ -2007,7 +2007,7 @@ async def send_whatsapp_message(request: dict):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "http://localhost:3001/send",
+                "http://localhost:3002/send",
                 json=request,
                 timeout=10.0
             )
@@ -2020,7 +2020,7 @@ async def restart_whatsapp_service():
     """Restart WhatsApp service connection"""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post("http://localhost:3001/restart", timeout=5.0)
+            response = await client.post("http://localhost:3002/restart", timeout=5.0)
             return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
