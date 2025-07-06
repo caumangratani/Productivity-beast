@@ -222,8 +222,8 @@ const ProjectManager = ({ currentUser, users }) => {
         >
           <div className="flex items-start justify-between mb-2">
             <h4 className="font-semibold text-gray-900 flex-1">{task.title}</h4>
-            <div className="flex items-center space-x-1 text-gray-400">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex items-center space-x-1 text-gray-400" title="Drag to move task">
+              <svg className="w-4 h-4 cursor-grab" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
               </svg>
             </div>
