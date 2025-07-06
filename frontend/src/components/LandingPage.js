@@ -173,16 +173,16 @@ const LandingPage = ({ onLogin }) => {
     
     try {
       const response = await axios.post(`${API}/auth/login`, {
-        email: loginData.email,
-        password: loginData.password
+        email: formData.email,
+        password: formData.password
       });
       
       if (response.data.access_token) {
         // Store token and user data
         localStorage.setItem('token', response.data.access_token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        setCurrentUser(response.data.user);
-        setIsAuthenticated(true);
+        setShowLogin(false);
+        onLogin(response.data.user);
         
         alert('✅ Login successful! Welcome to Productivity Beast!');
       } else {
