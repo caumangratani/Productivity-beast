@@ -73,6 +73,11 @@ const WhatsAppIntegration = ({ currentUser }) => {
   };
 
   const updatePhoneNumber = async () => {
+    if (!phoneNumber.trim()) {
+      alert('Please enter a phone number');
+      return;
+    }
+    
     if (!phoneNumber.startsWith('+')) {
       alert('Phone number must include country code (e.g., +1234567890)');
       return;
@@ -81,21 +86,33 @@ const WhatsAppIntegration = ({ currentUser }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`${API}/users/${currentUser.id}/phone`, 
+      const response = await axios.patch(`${API}/users/${currentUser.id}/phone`, 
         { phone_number: phoneNumber },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      alert('Phone number updated successfully!');
-      
-      setConnectionHistory(prev => [...prev, {
-        timestamp: new Date(),
-        action: 'phone_updated',
-        message: `Phone number updated to ${phoneNumber}`
-      }]);
+      if (response.data.success) {
+        alert('Phone number updated successfully! You can now receive WhatsApp notifications.');
+        
+        setConnectionHistory(prev => [...prev, {
+          timestamp: new Date(),
+          action: 'phone_updated',
+          message: `Phone number updated to ${phoneNumber}`
+        }]);
+      } else {
+        alert('Failed to update phone number: ' + (response.data.message || 'Unknown error'));
+      }
     } catch (error) {
       console.error('Error updating phone number:', error);
-      alert('Failed to update phone number');
+      let errorMessage = 'Failed to update phone number';
+      
+      if (error.response?.data?.detail) {
+        errorMessage += ': ' + error.response.data.detail;
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
+      
+      alert(errorMessage);
     }
     setLoading(false);
   };
