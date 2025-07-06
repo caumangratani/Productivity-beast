@@ -26,12 +26,13 @@ def test_signup_with_exact_form_data():
     timestamp = int(time.time())
     
     # Use the exact data from the form as mentioned in the review request
+    # But convert the plan to the expected format (lowercase without price)
     signup_data = {
         "name": "Umang Ratani",
         "email": f"caumangjratani+{timestamp}@gmail.com",  # Add timestamp to avoid duplicate email
         "password": "some_password",
         "company": "BBCG",
-        "plan": "Personal (₹2,000/month)"
+        "plan": "personal"  # Changed from "Personal (₹2,000/month)" to match backend expectations
     }
     
     logger.info(f"Testing signup with data: {json.dumps(signup_data, indent=2)}")
