@@ -926,6 +926,7 @@ class AuthSignup(BaseModel):
     password: str
     company: str
     plan: PlanType = PlanType.PERSONAL
+    phone_number: Optional[str] = None
 
 class AuthLogin(BaseModel):
     email: str
