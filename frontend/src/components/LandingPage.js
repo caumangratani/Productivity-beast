@@ -179,6 +179,17 @@ const LandingPage = ({ onLogin }) => {
     setLoading(false);
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      // For now, show a message about Google login
+      alert('🚀 Google Login will be available soon! Please use regular login for now.');
+    } catch (error) {
+      console.error('Google login error:', error);
+    }
+    setLoading(false);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
