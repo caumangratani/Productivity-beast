@@ -106,39 +106,65 @@ const LandingPage = ({ onLogin }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (signupData.password !== signupData.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await axios.post(`${API}/auth/signup`, formData);
+      // Convert plan display text to backend format
+      let planValue = 'personal'; // default
+      if (signupData.plan.includes('Team')) planValue = 'team';
+      else if (signupData.plan.includes('Enterprise')) planValue = 'enterprise';
+      
+      const response = await axios.post(`${API}/auth/signup`, {
+        name: signupData.name,
+        email: signupData.email,
+        password: signupData.password,
+        company: signupData.company,
+        plan: planValue
+      });
+
       if (response.data.success) {
-        alert('Account created successfully! Please check your email for verification.');
-        setShowSignup(false);
+        alert('Account created successfully! Please login with your credentials.');
+        setActiveTab('login');
+        setSignupData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          company: '',
+          plan: 'Personal (₹2,000/month)'
+        });
+      } else {
+        alert('Failed to create account: ' + (response.data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Signup error:', error);
+      let errorMessage = 'Failed to create account';
       
-      // Improved error handling to show more specific errors
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (error.response.status === 422) {
-          // Validation error
-          const validationErrors = error.response.data.detail;
-          if (Array.isArray(validationErrors)) {
-            const errorMessages = validationErrors.map(err => `${err.loc[1]}: ${err.msg}`).join('\n');
-            alert(`Validation error:\n${errorMessages}`);
+        if (error.response.status === 400) {
+          errorMessage = error.response.data.detail || 'Invalid registration data';
+        } else if (error.response.status === 422) {
+          // Handle validation errors
+          if (error.response.data.detail && Array.isArray(error.response.data.detail)) {
+            const validationErrors = error.response.data.detail.map(err => err.msg).join(', ');
+            errorMessage = 'Validation error: ' + validationErrors;
           } else {
-            alert('Validation error: ' + JSON.stringify(error.response.data));
+            errorMessage = error.response.data.detail || 'Validation failed';
           }
-        } else {
-          alert('Error creating account: ' + (error.response.data.detail || error.response.data.message || 'Unknown error'));
+        } else if (error.response.data?.detail) {
+          errorMessage = error.response.data.detail;
         }
-      } else if (error.request) {
-        // The request was made but no response was received
-        alert('Error creating account: No response from server. Please check your connection.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        alert('Error creating account: ' + error.message);
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
       }
+      
+      alert(errorMessage);
     }
+    setLoading(false);
   };
 
   const handleLogin = async (e) => {
