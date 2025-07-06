@@ -20,6 +20,15 @@ const LandingPage = ({ onLogin }) => {
   const [showLogin, setShowLogin] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [signupData, setSignupData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    company: '',
+    plan: 'Personal (₹2,000/month)',
+    phone_number: ''
+  });
   const [formData, setFormData] = useState({
     email: '',
     password: '',
