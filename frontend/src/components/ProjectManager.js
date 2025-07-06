@@ -258,10 +258,10 @@ const ProjectManager = ({ currentUser, users }) => {
   );
 
   const KanbanColumn = ({ column, index }) => (
-    <div className="kanban-column flex-shrink-0 w-80">
+    <div className="kanban-column flex-shrink-0 w-full lg:w-80">
       <div className={`kanban-column-header p-3 rounded-t-lg border-2 ${getColumnColor(column.color)} flex items-center justify-between`}>
         <div className="flex items-center space-x-2">
-          <h3 className="font-semibold">{column.title}</h3>
+          <h3 className="font-semibold text-sm lg:text-base">{column.title}</h3>
           <span className="badge bg-white bg-opacity-50 text-xs">
             {column.tasks.length}
           </span>
@@ -270,7 +270,7 @@ const ProjectManager = ({ currentUser, users }) => {
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setNewTask({ ...newTask, status: column.id })}
-            className="text-current hover:bg-white hover:bg-opacity-20 p-1 rounded"
+            className="text-current hover:bg-white hover:bg-opacity-20 p-1 rounded touch-target"
             title="Add task to this column"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -281,7 +281,7 @@ const ProjectManager = ({ currentUser, users }) => {
           {!['todo', 'in_progress', 'completed'].includes(column.id) && (
             <button
               onClick={() => deleteColumn(column.id)}
-              className="text-current hover:bg-white hover:bg-opacity-20 p-1 rounded"
+              className="text-current hover:bg-white hover:bg-opacity-20 p-1 rounded touch-target"
               title="Delete column"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -297,7 +297,7 @@ const ProjectManager = ({ currentUser, users }) => {
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`kanban-column-content min-h-96 p-3 bg-gray-50 border-2 border-t-0 rounded-b-lg space-y-3 ${
+            className={`kanban-column-content min-h-64 lg:min-h-96 p-3 bg-gray-50 border-2 border-t-0 rounded-b-lg space-y-3 ${
               snapshot.isDraggingOver ? 'bg-blue-50 border-blue-300' : 'border-gray-200'
             }`}
           >
@@ -308,7 +308,7 @@ const ProjectManager = ({ currentUser, users }) => {
             
             {column.tasks.length === 0 && (
               <div className="text-center text-gray-400 py-8">
-                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-8 h-8 lg:w-12 lg:h-12 mx-auto mb-3 opacity-50" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
                 <p className="text-sm">Drop tasks here</p>
