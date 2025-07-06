@@ -413,8 +413,8 @@ const ProjectManager = ({ currentUser, users }) => {
           </div>
 
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="kanban-board-container overflow-x-auto">
-              <div className="kanban-board flex space-x-6 pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="kanban-board-container mobile-scroll">
+              <div className="kanban-board flex space-x-6 pb-4 lg:flex-row flex-col lg:space-x-6 lg:space-y-0 space-y-4 space-x-0" style={{ minWidth: 'max-content' }}>
                 {customColumns.map((column, index) => (
                   <KanbanColumn key={column.id} column={column} index={index} />
                 ))}
