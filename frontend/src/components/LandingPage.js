@@ -803,8 +803,8 @@ const LandingPage = ({ onLogin }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    value={signupData.name}
+                    onChange={(e) => setSignupData({...signupData, name: e.target.value})}
                     className="input-field"
                     placeholder="Enter your name"
                     required
@@ -815,8 +815,8 @@ const LandingPage = ({ onLogin }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
                   <input
                     type="text"
-                    value={formData.company}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
+                    value={signupData.company}
+                    onChange={(e) => setSignupData({...signupData, company: e.target.value})}
                     className="input-field"
                     placeholder="Company name"
                     required
@@ -828,8 +828,8 @@ const LandingPage = ({ onLogin }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  value={signupData.email}
+                  onChange={(e) => setSignupData({...signupData, email: e.target.value})}
                   className="input-field"
                   placeholder="Enter your email"
                   required
@@ -837,32 +837,58 @@ const LandingPage = ({ onLogin }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Number (Optional)</label>
                 <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  type="tel"
+                  value={signupData.phone_number}
+                  onChange={(e) => setSignupData({...signupData, phone_number: e.target.value})}
                   className="input-field"
-                  placeholder="Create a password"
-                  required
+                  placeholder="e.g., +91 98765 43210"
                 />
+                <p className="text-xs text-gray-500 mt-1">For task notifications and team messaging</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    value={signupData.password}
+                    onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+                    className="input-field"
+                    placeholder="Create a password"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={signupData.confirmPassword}
+                    onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
+                    className="input-field"
+                    placeholder="Confirm password"
+                    required
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
                 <select
-                  value={formData.plan}
-                  onChange={(e) => setFormData({...formData, plan: e.target.value})}
+                  value={signupData.plan}
+                  onChange={(e) => setSignupData({...signupData, plan: e.target.value})}
                   className="select-field"
                 >
-                  <option value="personal">Personal (₹2,000/month)</option>
-                  <option value="team">Team (₹5,000/month)</option>
-                  <option value="enterprise">Enterprise (₹7,000/month)</option>
+                  <option value="Personal (₹2,000/month)">Personal (₹2,000/month)</option>
+                  <option value="Team (₹5,000/month)">Team (₹5,000/month)</option>
+                  <option value="Enterprise (₹7,000/month)">Enterprise (₹7,000/month)</option>
                 </select>
               </div>
 
-              <button type="submit" className="btn-primary w-full">
-                Start 14-Day Free Trial
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? 'Creating Account...' : 'Start 14-Day Free Trial'}
               </button>
             </form>
 
