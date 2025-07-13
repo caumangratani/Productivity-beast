@@ -1252,8 +1252,9 @@ def test_ai_coach_real_data_analysis():
         
         chat_data2 = {
             "message": "what are my completion rates and task counts?",
+            "user_id": user_id,  # Include user_id in request body
             "include_user_context": True,
-            "provider": "openai"
+            "ai_provider": "openai"
         }
         
         response2 = requests.post(f"{API_URL}/ai-coach/chat", json=chat_data2, headers=headers)
