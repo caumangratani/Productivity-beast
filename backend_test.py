@@ -1189,8 +1189,9 @@ def test_ai_coach_real_data_analysis():
         
         chat_data = {
             "message": "analyze my productivity data",
+            "user_id": user_id,  # Include user_id in request body
             "include_user_context": True,
-            "provider": "openai"
+            "ai_provider": "openai"
         }
         
         response = requests.post(f"{API_URL}/ai-coach/chat", json=chat_data, headers=headers)
