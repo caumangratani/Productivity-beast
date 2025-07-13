@@ -128,7 +128,7 @@ const AICoach = ({ currentUser }) => {
           text: response.data.response,
           sender: 'ai',
           timestamp: new Date(),
-          provider: selectedProvider
+          provider: aiProvider
         };
         setChatMessages(prev => [...prev, aiMessage]);
       } else {
