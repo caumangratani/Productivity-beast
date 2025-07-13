@@ -92,92 +92,75 @@ const AICoach = ({ currentUser }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentUser?.id) return;
+
+    setLoading(true);
     
-    // Add user message
     const userMessage = {
-      type: 'user',
-      message: newMessage,
+      id: Date.now().toString(),
+      text: newMessage.trim(),
+      sender: 'user',
       timestamp: new Date()
     };
+
     setChatMessages(prev => [...prev, userMessage]);
-    
-    const currentMessage = newMessage;
     setNewMessage('');
-    setIsTyping(true);
 
     try {
-      console.log('Sending message:', currentMessage);
+      const token = localStorage.getItem('token');
       
-      // Check if it's a slash command
-      if (currentMessage.startsWith('/')) {
-        console.log('Processing slash command:', currentMessage);
-        const response = await axios.post(`${API}/ai-coach/command`, {
-          command: currentMessage.trim()
-        });
-        
-        console.log('Command response received:', response.data);
-        
+      // Send message with user context for personalized response
+      const response = await axios.post(`${API}/ai-coach/chat`, {
+        message: userMessage.text,
+        user_id: currentUser.id,
+        ai_provider: selectedProvider,
+        include_user_context: true  // Request real user data analysis
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.response) {
         const aiMessage = {
-          type: 'ai',
-          message: response.data.response,
+          id: (Date.now() + 1).toString(),
+          text: response.data.response,
+          sender: 'ai',
           timestamp: new Date(),
-          command: response.data.command,
-          provider: response.data.provider || 'command'
+          provider: selectedProvider
         };
         setChatMessages(prev => [...prev, aiMessage]);
       } else {
-        // Regular chat message - use real AI
-        console.log('Sending chat message to AI Coach API');
-        
-        // Include user_id explicitly if we have a selected user
-        const chatData = {
-          message: currentMessage,
-          provider: aiProvider
-        };
-        
-        if (selectedUserId) {
-          chatData.user_id = selectedUserId;
-          console.log('Including user_id in request:', selectedUserId);
-        } else if (currentUser && currentUser.id) {
-          chatData.user_id = currentUser.id;
-          console.log('Including current user ID in request:', currentUser.id);
-        }
-        
-        console.log('Chat request data:', chatData);
-        
-        const response = await axios.post(`${API}/ai-coach/chat`, chatData);
-        
-        console.log('Chat response received:', response.data);
-        
-        if (response.data && response.data.response) {
-          const aiMessage = {
-            type: 'ai',
-            message: response.data.response,
-            timestamp: new Date(),
-            provider: response.data.provider,
-            context_used: response.data.user_context_used
-          };
-          setChatMessages(prev => [...prev, aiMessage]);
-        } else {
-          console.error('Invalid response format:', response.data);
-          throw new Error('Invalid response format from AI Coach API');
-        }
+        throw new Error('Invalid response format');
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      console.error('Error details:', error.response?.data || error.message);
       
-      const errorMessage = {
-        type: 'ai',
-        message: `❌ Sorry, I encountered an error processing your request: ${error.response?.data?.detail || error.message}\n\nPlease try again. If the issue persists, it might be an API connectivity issue.`,
+    } catch (error) {
+      console.error('AI Coach error:', error);
+      let errorMessage = 'Sorry, I encountered an error. ';
+      
+      if (error.response?.status === 401) {
+        errorMessage += 'Please login again to continue our conversation.';
+      } else if (error.response?.status === 429) {
+        errorMessage += 'I\'m getting too many requests right now. Please try again in a moment.';
+      } else if (error.response?.data?.detail) {
+        errorMessage += error.response.data.detail;
+      } else {
+        errorMessage += 'Let me try to analyze your productivity data differently.';
+      }
+      
+      const errorResponse = {
+        id: (Date.now() + 1).toString(),
+        text: errorMessage,
+        sender: 'ai',
         timestamp: new Date(),
-        error: true
+        provider: selectedProvider,
+        isError: true
       };
-      setChatMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
+      setChatMessages(prev => [...prev, errorResponse]);
     }
+    
+    setLoading(false);
   };
 
   const handleQuickMessage = (message) => {
