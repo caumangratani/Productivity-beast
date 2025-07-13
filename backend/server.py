@@ -2855,69 +2855,108 @@ async def get_whatsapp_settings(current_user: User = Depends(get_current_user)):
 
 # Enhanced AI Coach with real AI integration and DATABASE ANALYSIS
 @api_router.post("/ai-coach/chat")
-async def ai_chat(request: dict):
-    """AI Chat endpoint with REAL DATA ANALYSIS from user's actual tasks and performance"""
-    message = request.get("message", "")
-    ai_provider = request.get("provider", "openai")
-    user_id = request.get("user_id", "demo_user")
-    
+async def ai_coach_chat(request: dict):
+    """AI Coach chat with real user data analysis"""
     try:
-        # Get REAL user data from the database
-        user_data = await get_comprehensive_user_analysis(user_id)
+        message = request.get("message", "").strip()
+        user_id = request.get("user_id")
+        ai_provider = request.get("ai_provider", "openai")
+        include_context = request.get("include_user_context", True)
         
-        # Use OpenAI with user's actual data
-        openai_key = os.environ.get('OPENAI_API_KEY')
+        if not message:
+            raise HTTPException(status_code=400, detail="Message is required")
         
-        if openai_key:
-            from openai import OpenAI
-            client = OpenAI(api_key=openai_key)
+        user_context = ""
+        if user_id and include_context:
+            # Get user's actual task data for personalized analysis
+            user = await db.users.find_one({"id": user_id})
+            tasks = await db.tasks.find({"assigned_to": user_id}).to_list(100)
             
-            # Create comprehensive system prompt with REAL USER DATA
-            system_prompt = f"""You are an expert productivity coach with access to the user's complete productivity database. 
+            if user and tasks:
+                # Analyze user's real data
+                completed_tasks = [t for t in tasks if t.get("status") == "completed"]
+                pending_tasks = [t for t in tasks if t.get("status") != "completed"]
+                overdue_tasks = [t for t in pending_tasks if t.get("due_date") and t["due_date"].replace(tzinfo=None) < datetime.utcnow()]
+                
+                # Calculate real performance metrics
+                completion_rate = (len(completed_tasks) / len(tasks) * 100) if tasks else 0
+                
+                # Get priority distribution
+                priority_dist = {}
+                for task in tasks:
+                    priority = task.get("priority", "medium")
+                    priority_dist[priority] = priority_dist.get(priority, 0) + 1
+                
+                # Get recent activity
+                week_ago = datetime.utcnow() - timedelta(days=7)
+                recent_completed = [t for t in completed_tasks if t.get("completed_at") and t["completed_at"] >= week_ago]
+                
+                user_context = f"""
+User Analysis for {user.get('name', 'User')}:
 
-REAL USER DATA ANALYSIS:
-{user_data}
+CURRENT PERFORMANCE:
+- Total tasks: {len(tasks)}
+- Completed: {len(completed_tasks)} ({completion_rate:.1f}%)
+- Pending: {len(pending_tasks)}
+- Overdue: {len(overdue_tasks)}
+- This week completed: {len(recent_completed)}
 
-You have access to their actual tasks, projects, performance metrics, team data, and productivity patterns. 
-Provide specific, data-driven insights based on their REAL information. 
+TASK PRIORITIES:
+- Urgent: {priority_dist.get('urgent', 0)}
+- High: {priority_dist.get('high', 0)}
+- Medium: {priority_dist.get('medium', 0)}
+- Low: {priority_dist.get('low', 0)}
 
-When they ask questions, reference their actual:
-- Task completion rates and patterns
-- Current projects and deadlines  
-- Team performance and collaboration
-- Eisenhower Matrix distribution
-- Recent productivity trends
-- Specific tasks they're working on
-- Actual performance scores and metrics
+SPECIFIC INSIGHTS:
+{f'⚠️ CRITICAL: {len(overdue_tasks)} overdue tasks need immediate attention!' if overdue_tasks else '✅ No overdue tasks - good time management!'}
+{f'📈 POSITIVE: Completed {len(recent_completed)} tasks this week - {("excellent" if len(recent_completed) >= 10 else "good" if len(recent_completed) >= 5 else "needs improvement")} pace' if recent_completed else '⚠️ No tasks completed this week - may need productivity boost'}
+{f'🎯 FOCUS AREA: High priority tasks pending - {len([t for t in pending_tasks if t.get("priority") in ["urgent", "high"]])} urgent/high priority items' if any(t.get("priority") in ["urgent", "high"] for t in pending_tasks) else '✅ Good priority management'}
 
-Be specific and actionable, not generic. Use their real data to provide personalized coaching."""
+RECENT TASK EXAMPLES:
+""" + "\n".join([f"- {t['title']} ({t.get('status', 'unknown')})" for t in tasks[-5:]]) if tasks else "- No tasks found"
+            else:
+                user_context = f"User {user_id}: No task data available yet. This appears to be a new user who hasn't created tasks."
+        
+        # Create personalized prompt
+        system_prompt = f"""You are an AI Productivity Coach for the Productivity Beast app. You analyze REAL user data and provide personalized, actionable advice.
 
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": message}
-                ],
-                max_tokens=1000,
-                temperature=0.7
-            )
-            
-            ai_response = response.choices[0].message.content
-            
-        else:
-            # Enhanced fallback with actual user data
-            ai_response = await generate_data_driven_response(message, user_data)
-            
+{user_context if user_context else "General productivity coaching mode - no specific user data available."}
+
+Guidelines:
+1. Reference the user's ACTUAL data in your response
+2. Give specific, actionable advice based on their real performance
+3. Be encouraging but honest about areas for improvement
+4. Suggest concrete next steps they can take today
+5. Keep responses focused and practical (2-3 paragraphs max)
+6. Use metrics and specific examples from their data
+
+User Question: {message}"""
+
+        # Call OpenAI with real user context
+        openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        
+        ai_response = response.choices[0].message.content
+        
         return {
             "response": ai_response,
-            "provider": ai_provider if openai_key else "enhanced_fallback",
-            "timestamp": datetime.utcnow(),
-            "user_context_used": True,
-            "data_points_analyzed": user_data.get("data_points_count", 0)
+            "provider": ai_provider,
+            "user_context_used": bool(user_context),
+            "analysis_summary": f"Analyzed {len(tasks) if user_id and include_context else 0} tasks" if user_id else "No user context"
         }
         
     except Exception as e:
-        logger.error(f"AI Chat error: {str(e)}")
+        logger.error(f"AI Coach chat error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI Coach error: {str(e)}")
         return {
             "response": "I encountered an error analyzing your data. Please try again.",
             "provider": "error",
