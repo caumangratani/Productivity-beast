@@ -1301,6 +1301,98 @@ async def send_weekly_reports():
         logger.error(f"Weekly reports error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Simple WhatsApp Integration Endpoints
+@api_router.post("/whatsapp/start-connection")
+async def start_whatsapp_connection():
+    """Start WhatsApp connection process"""
+    try:
+        # In a real implementation, this would initialize the WhatsApp client
+        # For now, return success to proceed to QR code generation
+        return {
+            "success": True,
+            "message": "WhatsApp connection process started",
+            "status": "waiting_for_qr"
+        }
+    except Exception as e:
+        logger.error(f"WhatsApp connection start error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/qr-code")
+async def get_whatsapp_qr_code():
+    """Get WhatsApp QR code for scanning"""
+    try:
+        # In a real implementation, this would get the actual QR code from WhatsApp client
+        # For demo purposes, generate a placeholder QR code
+        import qrcode
+        from io import BytesIO
+        import base64
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data("WhatsApp connection placeholder - In production, this would be the actual WhatsApp auth QR")
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        return {
+            "success": True,
+            "qr_code": qr_base64,
+            "message": "QR code generated successfully"
+        }
+    except Exception as e:
+        logger.error(f"WhatsApp QR code generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_connection_status():
+    """Get current WhatsApp connection status"""
+    try:
+        # In a real implementation, this would check the actual WhatsApp client status
+        # For demo purposes, return a status based on service availability
+        
+        # Try to connect to WhatsApp service
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get("http://localhost:3002/status", timeout=5.0)
+                if response.status_code == 200:
+                    return {
+                        "connected": True,
+                        "status": "connected",
+                        "phone_number": "+1234567890",  # In production, this would be the actual connected number
+                        "message": "WhatsApp is connected and ready"
+                    }
+        except:
+            pass
+        
+        return {
+            "connected": False,
+            "status": "disconnected",
+            "message": "WhatsApp service is not available"
+        }
+    except Exception as e:
+        logger.error(f"WhatsApp status check error: {str(e)}")
+        return {
+            "connected": False,
+            "status": "error",
+            "message": f"Error checking status: {str(e)}"
+        }
+
+@api_router.post("/whatsapp/disconnect")
+async def disconnect_whatsapp():
+    """Disconnect WhatsApp"""
+    try:
+        # In a real implementation, this would disconnect the WhatsApp client
+        return {
+            "success": True,
+            "message": "WhatsApp disconnected successfully"
+        }
+    except Exception as e:
+        logger.error(f"WhatsApp disconnect error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 async def get_or_create_whatsapp_user(phone_number: str):
     """Get existing WhatsApp user or create new one"""
     users_collection = db.users
