@@ -1021,41 +1021,373 @@ def test_whatsapp_settings_integration():
         logger.error(f"WhatsApp settings integration test error: {str(e)}")
         raise
 
-if __name__ == "__main__":
-    # Run all tests
-    logger.info("Starting backend API tests...")
+def test_google_oauth_critical_fixes():
+    """Test critical Google OAuth integration fixes"""
+    logger.info("=== TESTING CRITICAL GOOGLE OAUTH FIXES ===")
     
     try:
-        test_health_check()
-        test_user_management()
-        test_project_management()
-        test_task_management_and_eisenhower_matrix()
-        test_analytics_endpoints()
-        test_ai_coach_insights()
-        test_task_deletion()
-        test_sample_data_population()
-        test_auth_endpoints()
-        test_ai_coach_chat()
+        # Create a test user
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"Google OAuth Test User",
+            "email": f"googleoauth_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
         
-        # WhatsApp integration tests
-        test_whatsapp_message_processing()
-        test_team_messaging()
-        test_daily_reminders()
-        test_weekly_reports()
-        test_phone_number_management()
-        test_whatsapp_service_integration()
-        test_whatsapp_settings_integration()
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
         
-        # Google integration tests
-        test_google_oauth_flow()
-        test_google_integration_status()
-        test_google_calendar_sync()
-        test_google_auto_scheduler()
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
         
-        # AI integration tests
-        test_ai_settings_integration()
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        user_id = login_result["user"]["id"]
         
-        logger.info("All tests passed successfully!")
+        logger.info(f"Created test user with ID: {user_id}")
+        
+        # 1. Test GET /api/google/auth/url endpoint with user_id parameter
+        logger.info("Testing GET /api/google/auth/url endpoint...")
+        response = requests.get(f"{API_URL}/google/auth/url?user_id={user_id}")
+        
+        if response.status_code == 500:
+            error_data = response.json()
+            if "Google OAuth not configured" in error_data.get("detail", ""):
+                logger.error("CRITICAL: Google OAuth credentials are not properly configured in backend")
+                logger.error("Expected GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend/.env")
+                return False
+        
+        assert response.status_code == 200, f"Google OAuth URL generation failed: {response.text}"
+        
+        auth_url_result = response.json()
+        logger.info(f"Google OAuth URL response: {auth_url_result}")
+        
+        # 2. Verify it returns a valid Google OAuth URL
+        assert "auth_url" in auth_url_result, "Missing auth_url in response"
+        assert "state" in auth_url_result, "Missing state in response"
+        assert "message" in auth_url_result, "Missing message in response"
+        
+        auth_url = auth_url_result["auth_url"]
+        state = auth_url_result["state"]
+        
+        # 3. Test if the endpoint properly handles Google credentials
+        assert "accounts.google.com/o/oauth2/auth" in auth_url, "Invalid Google OAuth URL"
+        assert user_id in state, "User ID not properly included in state"
+        
+        # 4. Check if the auth URL contains the correct scopes and redirect URI
+        assert "scope=" in auth_url, "Missing scopes in OAuth URL"
+        assert "calendar" in auth_url, "Missing calendar scope"
+        assert "spreadsheets" in auth_url, "Missing spreadsheets scope"
+        assert "redirect_uri=" in auth_url, "Missing redirect URI"
+        assert "project-continue-1.emergent.host" in auth_url, "Incorrect redirect URI"
+        
+        logger.info("✅ Google OAuth URL generation test PASSED")
+        logger.info(f"✅ Auth URL contains correct scopes and redirect URI")
+        logger.info(f"✅ State parameter properly includes user_id: {user_id}")
+        
+        # Test Google integration status
+        logger.info("Testing Google integration status...")
+        response = requests.get(f"{API_URL}/google/integration/status/{user_id}")
+        assert response.status_code == 200, f"Failed to get Google integration status: {response.text}"
+        
+        status_result = response.json()
+        assert "connected" in status_result
+        assert "setup_required" in status_result
+        assert status_result["connected"] == False  # Should be false for new user
+        assert status_result["setup_required"] == True  # Should require setup
+        
+        logger.info("✅ Google integration status test PASSED")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Google OAuth critical fixes test FAILED: {str(e)}")
+        return False
+
+def test_ai_coach_real_data_analysis():
+    """Test AI Coach Real Data Analysis critical fixes"""
+    logger.info("=== TESTING CRITICAL AI COACH REAL DATA ANALYSIS FIXES ===")
+    
+    try:
+        # Create a test user with some task data
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        signup_data = {
+            "name": f"AI Coach Test User",
+            "email": f"aicoach_{timestamp}@example.com",
+            "password": "SecurePassword!",
+            "company": "Test Company",
+            "plan": "personal"
+        }
+        
+        # Create user via signup
+        response = requests.post(f"{API_URL}/auth/signup", json=signup_data)
+        assert response.status_code == 200, f"Failed to signup: {response.text}"
+        
+        # Login to get token
+        login_data = {
+            "email": signup_data["email"],
+            "password": signup_data["password"]
+        }
+        
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        assert response.status_code == 200, f"Failed to login: {response.text}"
+        login_result = response.json()
+        token = login_result["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        user_id = login_result["user"]["id"]
+        
+        logger.info(f"Created test user with ID: {user_id}")
+        
+        # Create some sample tasks for the user to analyze
+        sample_tasks = [
+            {
+                "title": "Complete project proposal",
+                "description": "Write and submit the Q1 project proposal",
+                "assigned_to": user_id,
+                "priority": "high",
+                "status": "completed",
+                "due_date": iso_format(datetime.utcnow() - timedelta(days=2)),
+                "tags": ["project", "proposal"]
+            },
+            {
+                "title": "Review team performance",
+                "description": "Analyze team metrics and provide feedback",
+                "assigned_to": user_id,
+                "priority": "medium",
+                "status": "in_progress",
+                "due_date": iso_format(datetime.utcnow() + timedelta(days=3)),
+                "tags": ["review", "team"]
+            },
+            {
+                "title": "Update documentation",
+                "description": "Update API documentation with latest changes",
+                "assigned_to": user_id,
+                "priority": "low",
+                "status": "todo",
+                "due_date": iso_format(datetime.utcnow() + timedelta(days=7)),
+                "tags": ["documentation"]
+            }
+        ]
+        
+        created_tasks = []
+        for task_data in sample_tasks:
+            response = requests.post(f"{API_URL}/tasks", json=task_data, headers=headers)
+            assert response.status_code == 200, f"Failed to create task: {response.text}"
+            created_tasks.append(response.json())
+            
+        logger.info(f"Created {len(created_tasks)} sample tasks for analysis")
+        
+        # 1. Test POST /api/ai-coach/chat endpoint with include_user_context=true
+        logger.info("Testing AI Coach chat with user context...")
+        
+        chat_data = {
+            "message": "analyze my productivity data",
+            "include_user_context": True,
+            "provider": "openai"
+        }
+        
+        response = requests.post(f"{API_URL}/ai-coach/chat", json=chat_data, headers=headers)
+        
+        if response.status_code == 500:
+            error_data = response.json()
+            if "OpenAI API key not configured" in error_data.get("detail", ""):
+                logger.error("CRITICAL: OpenAI API key is not properly configured in backend")
+                logger.error("Expected OPENAI_API_KEY in backend/.env")
+                return False
+        
+        assert response.status_code == 200, f"AI Coach chat failed: {response.text}"
+        
+        chat_result = response.json()
+        logger.info(f"AI Coach response: {chat_result}")
+        
+        # 2. Verify the response includes actual user task data analysis
+        assert "response" in chat_result, "Missing response in AI Coach result"
+        assert "user_context" in chat_result, "Missing user_context in AI Coach result"
+        assert "provider" in chat_result, "Missing provider in AI Coach result"
+        
+        ai_response = chat_result["response"]
+        user_context = chat_result["user_context"]
+        
+        # 3. Check if the AI response references real user metrics
+        logger.info("Verifying AI response contains real user data analysis...")
+        
+        # Check user context contains real data
+        assert "total_tasks" in user_context, "Missing total_tasks in user context"
+        assert "completed_tasks" in user_context, "Missing completed_tasks in user context"
+        assert "completion_rate" in user_context, "Missing completion_rate in user context"
+        assert "overdue_tasks" in user_context, "Missing overdue_tasks in user context"
+        
+        # Verify the context reflects our created tasks
+        assert user_context["total_tasks"] >= len(created_tasks), f"Expected at least {len(created_tasks)} tasks, got {user_context['total_tasks']}"
+        assert user_context["completed_tasks"] >= 1, "Expected at least 1 completed task"
+        
+        # Check if AI response is personalized and not generic
+        assert len(ai_response) > 100, "AI response seems too short to be meaningful analysis"
+        
+        # Look for indicators that the AI is analyzing real data
+        productivity_indicators = [
+            "task", "completion", "productivity", "performance", 
+            "progress", "deadline", "priority", "project"
+        ]
+        
+        response_lower = ai_response.lower()
+        found_indicators = [indicator for indicator in productivity_indicators if indicator in response_lower]
+        
+        assert len(found_indicators) >= 3, f"AI response doesn't seem to contain productivity analysis. Found indicators: {found_indicators}"
+        
+        logger.info("✅ AI Coach real data analysis test PASSED")
+        logger.info(f"✅ User context includes: {user_context['total_tasks']} total tasks, {user_context['completed_tasks']} completed")
+        logger.info(f"✅ AI response contains productivity analysis with {len(found_indicators)} relevant indicators")
+        
+        # Test with different message to ensure it's analyzing data
+        logger.info("Testing AI Coach with different productivity query...")
+        
+        chat_data2 = {
+            "message": "what are my completion rates and task counts?",
+            "include_user_context": True,
+            "provider": "openai"
+        }
+        
+        response2 = requests.post(f"{API_URL}/ai-coach/chat", json=chat_data2, headers=headers)
+        assert response2.status_code == 200, f"Second AI Coach chat failed: {response2.text}"
+        
+        chat_result2 = response2.json()
+        ai_response2 = chat_result2["response"]
+        
+        # Verify this response also contains data analysis
+        assert len(ai_response2) > 50, "Second AI response seems too short"
+        
+        logger.info("✅ AI Coach responds consistently with real data analysis")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ AI Coach real data analysis test FAILED: {str(e)}")
+        return False
+
+def test_backend_environment_setup():
+    """Test backend environment setup for critical integrations"""
+    logger.info("=== TESTING BACKEND ENVIRONMENT SETUP ===")
+    
+    try:
+        # Test Google OAuth credentials configuration
+        logger.info("Testing Google OAuth credentials configuration...")
+        
+        # Read backend .env file to verify credentials
+        env_file_path = "/app/backend/.env"
+        google_client_id = None
+        google_client_secret = None
+        openai_api_key = None
+        
+        with open(env_file_path, 'r') as f:
+            for line in f:
+                if line.startswith('GOOGLE_CLIENT_ID='):
+                    google_client_id = line.strip().split('=')[1].strip('"')
+                elif line.startswith('GOOGLE_CLIENT_SECRET='):
+                    google_client_secret = line.strip().split('=')[1].strip('"')
+                elif line.startswith('OPENAI_API_KEY='):
+                    openai_api_key = line.strip().split('=')[1].strip('"')
+        
+        # Verify Google OAuth credentials
+        assert google_client_id is not None, "GOOGLE_CLIENT_ID not found in backend/.env"
+        assert google_client_secret is not None, "GOOGLE_CLIENT_SECRET not found in backend/.env"
+        assert len(google_client_id) > 10, "GOOGLE_CLIENT_ID seems invalid (too short)"
+        assert len(google_client_secret) > 10, "GOOGLE_CLIENT_SECRET seems invalid (too short)"
+        assert "apps.googleusercontent.com" in google_client_id, "GOOGLE_CLIENT_ID format seems invalid"
+        
+        logger.info("✅ Google OAuth credentials are properly configured")
+        
+        # Test OpenAI API key configuration
+        assert openai_api_key is not None, "OPENAI_API_KEY not found in backend/.env"
+        assert openai_api_key.startswith("sk-"), "OPENAI_API_KEY format seems invalid"
+        assert len(openai_api_key) > 20, "OPENAI_API_KEY seems invalid (too short)"
+        
+        logger.info("✅ OpenAI API key is properly configured")
+        
+        # Test if AI settings endpoint recognizes the configuration
+        response = requests.get(f"{API_URL}/integrations/ai-settings")
+        assert response.status_code == 200, f"Failed to get AI settings: {response.text}"
+        
+        ai_settings = response.json()
+        assert ai_settings["ai_enabled"] == True, "AI should be enabled with valid OpenAI key"
+        assert "***configured***" in ai_settings["openai_api_key"], "OpenAI key should show as configured"
+        
+        logger.info("✅ AI settings endpoint recognizes OpenAI configuration")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Backend environment setup test FAILED: {str(e)}")
+        return False
+
+if __name__ == "__main__":
+    # Run critical fixes tests first
+    logger.info("Starting CRITICAL FIXES testing for Google OAuth and AI Coach...")
+    
+    critical_tests_passed = 0
+    total_critical_tests = 3
+    
+    try:
+        # Test critical fixes
+        if test_google_oauth_critical_fixes():
+            critical_tests_passed += 1
+            
+        if test_ai_coach_real_data_analysis():
+            critical_tests_passed += 1
+            
+        if test_backend_environment_setup():
+            critical_tests_passed += 1
+        
+        logger.info(f"\n=== CRITICAL FIXES SUMMARY ===")
+        logger.info(f"Critical tests passed: {critical_tests_passed}/{total_critical_tests}")
+        
+        if critical_tests_passed == total_critical_tests:
+            logger.info("🎉 ALL CRITICAL FIXES ARE WORKING!")
+        else:
+            logger.error(f"❌ {total_critical_tests - critical_tests_passed} critical fixes still have issues")
+        
+        # Run other tests if critical fixes pass
+        if critical_tests_passed == total_critical_tests:
+            logger.info("\nRunning additional backend tests...")
+            
+            test_health_check()
+            test_user_management()
+            test_project_management()
+            test_task_management_and_eisenhower_matrix()
+            test_analytics_endpoints()
+            test_ai_coach_insights()
+            test_task_deletion()
+            test_sample_data_population()
+            test_auth_endpoints()
+            test_ai_coach_chat()
+            
+            # WhatsApp integration tests
+            test_whatsapp_message_processing()
+            test_team_messaging()
+            test_daily_reminders()
+            test_weekly_reports()
+            test_phone_number_management()
+            test_whatsapp_service_integration()
+            test_whatsapp_settings_integration()
+            
+            # Google integration tests
+            test_google_oauth_flow()
+            test_google_integration_status()
+            test_google_calendar_sync()
+            test_google_auto_scheduler()
+            
+            # AI integration tests
+            test_ai_settings_integration()
+            
+            logger.info("All tests passed successfully!")
+        
     except Exception as e:
         logger.error(f"Tests failed: {e}")
         raise
