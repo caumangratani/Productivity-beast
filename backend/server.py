@@ -18,7 +18,7 @@ import requests
 import hmac
 import hashlib
 import json
-import openai
+from openai import OpenAI
 import httpx
 
 ROOT_DIR = Path(__file__).parent
