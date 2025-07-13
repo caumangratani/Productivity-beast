@@ -100,6 +100,7 @@ const AICoach = ({ currentUser }) => {
       id: Date.now().toString(),
       text: newMessage.trim(),
       sender: 'user',
+      type: 'user',
       timestamp: new Date()
     };
 
