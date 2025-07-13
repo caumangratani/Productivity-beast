@@ -182,10 +182,18 @@ const LandingPage = ({ onLogin }) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      // For now, show a message about Google login
-      alert('🚀 Google Login will be available soon! Please use regular login for now.');
+      // Get Google OAuth URL from backend
+      const response = await axios.get(`${API}/google/auth/url?user_id=temp`);
+      
+      if (response.data.auth_url) {
+        // Open Google OAuth in current window
+        window.location.href = response.data.auth_url;
+      } else {
+        alert('❌ Google authentication setup required. Please contact support.');
+      }
     } catch (error) {
       console.error('Google login error:', error);
+      alert('❌ Google login temporarily unavailable. Please use email login.');
     }
     setLoading(false);
   };
