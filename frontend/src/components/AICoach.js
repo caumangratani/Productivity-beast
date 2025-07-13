@@ -127,13 +127,16 @@ const AICoach = ({ currentUser }) => {
         const aiMessage = {
           id: (Date.now() + 1).toString(),
           text: response.data.response,
+          message: response.data.response,
           sender: 'ai',
+          type: 'ai',
           timestamp: new Date(),
           provider: aiProvider
         };
         setChatMessages(prev => [...prev, aiMessage]);
       } else {
-        throw new Error('Invalid response format');
+        console.error('Invalid AI response format:', response.data);
+        throw new Error('Invalid response format from AI');
       }
       
     } catch (error) {
