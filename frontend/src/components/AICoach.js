@@ -272,20 +272,22 @@ const AICoach = ({ currentUser }) => {
             {chatMessages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.sender === 'user' || message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                    message.type === 'user'
+                    message.sender === 'user' || message.type === 'user'
                       ? 'bg-purple-500 text-white'
-                      : message.error
+                      : message.error || message.isError
                       ? 'bg-red-50 text-red-900 border border-red-200'
                       : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.message}</div>
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {message.message || message.text}
+                  </div>
                   <div className={`text-xs mt-2 flex items-center justify-between ${
-                    message.type === 'user' ? 'text-purple-100' : 'text-gray-500'
+                    message.sender === 'user' || message.type === 'user' ? 'text-purple-100' : 'text-gray-500'
                   }`}>
                     <span>{formatTimestamp(message.timestamp)}</span>
                     {message.provider && (
