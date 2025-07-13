@@ -549,12 +549,8 @@
 
 ## test_plan:
   current_focus:
-    - "Google OAuth Integration - Fixed"
-    - "AI Coach Real Data Analysis - Fixed"
     - "WhatsApp Integration Simplification"
-  stuck_tasks:
-    - "Google OAuth Integration - Fixed"
-    - "AI Coach Real Data Analysis - Fixed"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
