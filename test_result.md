@@ -273,20 +273,41 @@
         - agent: "testing"
         - comment: "Phone number management endpoint is now working correctly. The issue was that the endpoint uses PATCH method instead of PUT. Successfully updated phone number using the specific endpoint (/api/users/{user_id}/phone) with PATCH method."
         
-  - task: "WhatsApp Service Integration"
+  - task: "Google OAuth Integration - Fixed"
     implemented: true
-    working: true
-    file: "/app/backend/server.py"
+    working: false
+    file: "/app/frontend/src/components/LandingPage.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+        - agent: "main"
+        - comment: "Fixed Google OAuth handleGoogleLogin function to properly handle the OAuth flow with better error handling. Backend has proper Google credentials configured. Need to test the actual OAuth flow."
+        
+  - task: "AI Coach Real Data Analysis - Fixed"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/components/AICoach.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+        - agent: "main"
+        - comment: "AI Coach backend is properly implemented to analyze real user data and provide personalized insights. Frontend is correctly configured to send user context. Need to test with actual user interaction."
+        
+  - task: "WhatsApp Integration Simplification"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/components/WhatsAppIntegration.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
         - working: false
         - agent: "main"
-        - comment: "Integrated with WhatsApp service for messaging and notifications."
-        - working: true
-        - agent: "testing"
-        - comment: "WhatsApp service integration endpoints are working correctly. The QR code endpoint returns proper response. The status endpoint may not be available in the test environment, but the code is properly implemented to handle this case."
+        - comment: "User requested simple 'WhatsApp web scan and ready' solution instead of current complex setup. Need to implement simplified WhatsApp integration."
         
   - task: "Google OAuth Flow"
     implemented: true
