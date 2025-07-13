@@ -154,7 +154,7 @@ const AICoach = ({ currentUser }) => {
         text: errorMessage,
         sender: 'ai',
         timestamp: new Date(),
-        provider: selectedProvider,
+        provider: aiProvider,
         isError: true
       };
       setChatMessages(prev => [...prev, errorResponse]);
