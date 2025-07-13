@@ -182,18 +182,34 @@ const LandingPage = ({ onLogin }) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
+      // Generate a temporary user ID for the OAuth flow
+      const tempUserId = 'temp_' + Date.now();
+      
       // Get Google OAuth URL from backend
-      const response = await axios.get(`${API}/google/auth/url?user_id=temp`);
+      const response = await axios.get(`${API}/google/auth/url?user_id=${tempUserId}`);
       
       if (response.data.auth_url) {
+        // Store temp user ID for callback handling
+        localStorage.setItem('google_temp_user_id', tempUserId);
+        
         // Open Google OAuth in current window
         window.location.href = response.data.auth_url;
       } else {
-        alert('❌ Google authentication setup required. Please contact support.');
+        throw new Error('No auth URL received from server');
       }
     } catch (error) {
       console.error('Google login error:', error);
-      alert('❌ Google login temporarily unavailable. Please use email login.');
+      let errorMessage = 'Google login failed. ';
+      
+      if (error.response?.status === 500) {
+        errorMessage += 'Server configuration issue. Please try again later.';
+      } else if (error.response?.data?.detail) {
+        errorMessage += error.response.data.detail;
+      } else {
+        errorMessage += 'Please try again or use email login.';
+      }
+      
+      alert('❌ ' + errorMessage);
     }
     setLoading(false);
   };
