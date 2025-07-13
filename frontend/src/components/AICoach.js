@@ -113,7 +113,7 @@ const AICoach = ({ currentUser }) => {
       const response = await axios.post(`${API}/ai-coach/chat`, {
         message: userMessage.text,
         user_id: currentUser.id,
-        ai_provider: selectedProvider,
+        ai_provider: aiProvider,
         include_user_context: true  // Request real user data analysis
       }, {
         headers: {
