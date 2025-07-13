@@ -48,16 +48,19 @@
         const state = urlParams.get('state');
         const error = urlParams.get('error');
 
+        console.log('Google OAuth callback:', { code, state, error });
+
         if (error) {
-            // Send error to parent window
-            window.opener.postMessage({
-                type: 'google-oauth-error',
-                error: error
-            }, window.location.origin);
+            console.error('OAuth error:', error);
+            alert('Google OAuth error: ' + error);
             window.close();
         } else if (code && state) {
+            console.log('Processing OAuth callback...');
+            
             // Send success with code to backend
-            fetch('/api/google/auth/callback', {
+            const backendUrl = 'https://project-continue-1.emergent.host/api';
+            
+            fetch(`${backendUrl}/google/auth/callback`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -69,35 +72,24 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Callback response:', data);
                 if (data.success) {
-                    // Send success to parent window
-                    window.opener.postMessage({
-                        type: 'google-oauth-success',
-                        data: data
-                    }, window.location.origin);
+                    alert('✅ Google integration successful! You can now use Calendar sync and other Google features.');
+                    // Redirect back to integrations page
+                    window.location.href = 'https://project-continue-1.emergent.host/';
                 } else {
-                    // Send error to parent window
-                    window.opener.postMessage({
-                        type: 'google-oauth-error',
-                        error: data.message || 'Authentication failed'
-                    }, window.location.origin);
+                    alert('❌ Google integration failed: ' + (data.message || 'Unknown error'));
+                    window.location.href = 'https://project-continue-1.emergent.host/';
                 }
-                window.close();
             })
             .catch(error => {
-                // Send error to parent window
-                window.opener.postMessage({
-                    type: 'google-oauth-error',
-                    error: error.message
-                }, window.location.origin);
-                window.close();
+                console.error('Callback error:', error);
+                alert('❌ Google integration error: ' + error.message);
+                window.location.href = 'https://project-continue-1.emergent.host/';
             });
         } else {
-            // Send error to parent window
-            window.opener.postMessage({
-                type: 'google-oauth-error',
-                error: 'Missing authorization code'
-            }, window.location.origin);
+            console.error('Missing authorization code or state');
+            alert('❌ Google OAuth failed: Missing authorization data');
             window.close();
         }
     </script>
